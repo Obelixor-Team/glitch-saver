@@ -32,18 +32,17 @@ func main() {
 	}
 	defer quit() // Ensure screen is finalized on exit
 
-	// Simple text to display
-	str := "Glitch Saver: Press ESC or 'q' to quit"
-	for i, r := range str {
-		s.SetContent(i, 0, r, nil, tcell.StyleDefault.Foreground(tcell.ColorGreen))
-	}
-	s.Show()
+	// Get initial screen dimensions
+	width, height := s.Size()
+	_ = width // Suppress unused warning for now
+	_ = height // Suppress unused warning for now
 
 	// Main event loop
 	for {
 		ev := s.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventResize:
+			width, height = s.Size() // Update dimensions on resize
 			s.Sync()
 		case *tcell.EventKey:
 			if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
