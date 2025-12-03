@@ -52,7 +52,9 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 	for x := 0; x < width; x++ {
 		newX := x + offset
 		if newX >= 0 && newX < width {
-			s.SetContent(newX, y, line[x].r, nil, line[x].style)
+			if line[x].r != 0 { // Only draw if the buffered rune is not a zero value
+				s.SetContent(newX, y, line[x].r, nil, line[x].style)
+			}
 		}
 	}
 }
@@ -94,7 +96,9 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 	for y := 0; y < blockH; y++ {
 		for x := 0; x < blockW; x++ {
 			if destX+x < width && destY+y < height {
-				s.SetContent(destX+x, destY+y, block[y][x].r, nil, block[y][x].style)
+				if block[y][x].r != 0 { // Only draw if the buffered rune is not a zero value
+					s.SetContent(destX+x, destY+y, block[y][x].r, nil, block[y][x].style)
+				}
 			}
 		}
 	}
