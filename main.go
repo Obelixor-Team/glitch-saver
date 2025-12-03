@@ -4,11 +4,16 @@ import (
 	"log"
 	"os"
 	"time"
+	"math/rand"
 
 	"github.com/gdamore/tcell/v2"
 )
 
+const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
+
 func main() {
+	// Seed the random number generator
+	rand.Seed(time.Now().UnixNano())
 	// Initialize tcell screen
 	s, err := tcell.NewScreen()
 	if err != nil {
