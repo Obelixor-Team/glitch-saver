@@ -108,13 +108,14 @@ func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, u
 	} else if useCP437 {
 		charSet = cp437Chars
 	}
+	runes := []rune(charSet)
 
 	numGlitch := rGen.Intn(100*intensity) + (50 * intensity)
 	for i := 0; i < numGlitch; i++ {
 		x := rGen.Intn(width)
 		y := rGen.Intn(height)
 
-		r := rune(charSet[rGen.Intn(len(charSet))])
+		r := runes[rGen.Intn(len(runes))]
 		fg := glitchColors[rGen.Intn(len(glitchColors))]
 		bg := glitchColors[rGen.Intn(len(glitchColors))]
 		style := tcell.StyleDefault.Foreground(fg).Background(bg) // Added background color
