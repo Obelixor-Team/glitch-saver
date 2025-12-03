@@ -11,6 +11,38 @@ import (
 
 const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
 
+var glitchColors = []tcell.Color{
+	tcell.ColorRed,
+	tcell.ColorGreen,
+	tcell.ColorBlue,
+	tcell.ColorMagenta,
+	tcell.ColorYellow,
+	tcell.ColorCyan,
+	tcell.ColorWhite,
+	tcell.ColorLightGreen,
+	tcell.ColorLightCyan,
+	tcell.ColorLightSkyBlue,
+	tcell.ColorLightGoldenrodYellow,
+}
+
+// drawGlitch applies random character corruption to the screen
+func drawGlitch(s tcell.Screen, width, height int) {
+	numGlitch := rand.Intn(100) + 50 // Random number of glitches per frame
+
+	for i := 0; i < numGlitch; i++ {
+		x := rand.Intn(width)
+		y := rand.Intn(height)
+
+		// Get a random character
+		r := rune(glitchChars[rand.Intn(len(glitchChars))])
+
+		// Get a random color
+		style := tcell.StyleDefault.Foreground(glitchColors[rand.Intn(len(glitchColors))])
+
+		s.SetContent(x, y, r, nil, style)
+	}
+}
+
 func main() {
 	// Seed the random number generator
 	rand.Seed(time.Now().UnixNano())
@@ -39,8 +71,7 @@ func main() {
 
 	// Get initial screen dimensions
 	width, height := s.Size()
-	_ = width // Suppress unused warning for now
-	_ = height // Suppress unused warning for now
+	// No longer suppressing unused warnings, as width/height are now used
 
 	// Create a ticker for animation updates (e.g., 30 FPS)
 	ticker := time.NewTicker(time.Second / 30)
@@ -53,6 +84,7 @@ func main() {
 			switch ev := ev.(type) {
 			case *tcell.EventResize:
 				width, height = s.Size() // Update dimensions on resize
+				s.Clear()                // Clear screen on resize to avoid artifacts
 				s.Sync()                 // Sync screen after resize
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
@@ -60,9 +92,8 @@ func main() {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			// Placeholder for update logic (e.g., update glitch state)
-			// Placeholder for drawing logic
-			s.Show() // Render the screen
+			drawGlitch(s, width, height) // Call the glitch drawing function
+			s.Show()                     // Render the screen
 		}
 	}
 }
