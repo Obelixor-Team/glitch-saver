@@ -52,6 +52,50 @@ func shiftLineGlitch(s tcell.Screen, width, height int) {
 	}
 }
 
+// blockDistortionGlitch copies a random block of the screen to another random location
+func blockDistortionGlitch(s tcell.Screen, width, height int) {
+	if width == 0 || height == 0 {
+		return
+	}
+	// Define the source block
+	srcX, srcY := rand.Intn(width), rand.Intn(height)
+	blockW := rand.Intn(width/2) + 1  // Max half screen width
+	blockH := rand.Intn(height/2) + 1 // Max half screen height
+
+	// Define the destination
+	destX, destY := rand.Intn(width), rand.Intn(height)
+
+	// Buffer the block
+	block := make([][]struct {
+		r     rune
+		style tcell.Style
+	}, blockH)
+
+	for y := 0; y < blockH; y++ {
+		block[y] = make([]struct {
+			r     rune
+			style tcell.Style
+		}, blockW)
+		for x := 0; x < blockW; x++ {
+			if srcX+x < width && srcY+y < height {
+				r, _, style, _ := s.GetContent(srcX+x, srcY+y)
+				block[y][x].r = r
+				block[y][x].style = style
+			}
+		}
+	}
+
+	// Write the block to the destination
+	for y := 0; y < blockH; y++ {
+		for x := 0; x < blockW; x++ {
+			if destX+x < width && destY+y < height {
+				s.SetContent(destX+x, destY+y, block[y][x].r, nil, block[y][x].style)
+			}
+		}
+	}
+}
+
+
 // drawGlitch applies random character corruption and other effects to the screen
 func drawGlitch(s tcell.Screen, width, height int) {
 	// Character corruption
@@ -72,6 +116,11 @@ func drawGlitch(s tcell.Screen, width, height int) {
 	// Line shifts
 	if rand.Intn(10) < 2 { // 20% chance to shift a line
 		shiftLineGlitch(s, width, height)
+	}
+
+	// Block distortion
+	if rand.Intn(10) < 1 { // 10% chance to distort a block
+		blockDistortionGlitch(s, width, height)
 	}
 }
 
