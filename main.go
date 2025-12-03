@@ -28,11 +28,15 @@ var glitchColors = []tcell.Color{
 
 // GlitchOptions holds all configurable parameters for the glitch effects.
 type GlitchOptions struct {
-	FPS         int
-	Intensity   int
-	UseCP437    bool
-	UseBlocks   bool
-	UseBG       bool
+	FPS                 int
+	Intensity           int
+	UseCP437            bool
+	UseBlocks           bool
+	UseBG               bool
+	ScanlineEnable      bool
+	ScanlineProbability float64
+	ScanlineIntensity   int
+	ScanlineChar        string
 	// Add more options here later
 }
 
@@ -135,6 +139,52 @@ func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, cha
 	}
 }
 
+// applyScanlineEffect draws a horizontal scanline with glitch effects.
+func applyScanlineEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+	if height == 0 || !opts.ScanlineEnable {
+		return
+	}
+	if rGen.Float64() > opts.ScanlineProbability { // Check probability
+		return
+	}
+
+	y := rGen.Intn(height) // Random row
+	
+	scanlineRunes := []rune(glitchChars)
+	if opts.ScanlineChar != "" {
+		scanlineRunes = []rune(opts.ScanlineChar)
+	} else if opts.UseBlocks {
+		scanlineRunes = []rune(blockChars)
+	} else if opts.UseCP437 {
+		scanlineRunes = []rune(cp437Chars)
+	}
+
+	numScanlineChars := width / 2 // Default density
+	if opts.ScanlineIntensity > 0 {
+		numScanlineChars = rGen.Intn(width/2) + (width/4 * opts.ScanlineIntensity/10) // Scale with intensity
+	}
+	if numScanlineChars > width {
+		numScanlineChars = width
+	}
+
+
+	for i := 0; i < numScanlineChars; i++ {
+		x := rGen.Intn(width) // Random position within the row
+		
+		r := scanlineRunes[rGen.Intn(len(scanlineRunes))]
+		fg := glitchColors[rGen.Intn(len(glitchColors))]
+		
+		style := tcell.StyleDefault.Foreground(fg)
+		if opts.UseBG {
+			bg := glitchColors[rGen.Intn(len(glitchColors))]
+			style = style.Background(bg)
+		}
+
+		s.SetContent(x, y, r, nil, style)
+	}
+}
+
+
 // drawGlitch orchestrates various glitch effects on the screen.
 func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) { // opts replaces many args
 	var charSet []rune
@@ -155,6 +205,8 @@ func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 	if rGen.Intn(10) < 1 {
 		blockDistortionGlitch(s, width, height, rGen)
 	}
+
+	applyScanlineEffect(s, width, height, rGen, opts) // Call new scanline effect
 }
 
 func main() {
@@ -166,6 +218,10 @@ func main() {
 	flag.BoolVar(&opts.UseCP437, "cp437", false, "use Code Page 437 characters for a retro effect")
 	flag.BoolVar(&opts.UseBlocks, "blocks", false, "use only block characters for a heavy glitch effect")
 	flag.BoolVar(&opts.UseBG, "bg", false, "enable random background coloring")
+	flag.BoolVar(&opts.ScanlineEnable, "scanline", false, "enable scanline glitch effect")
+	flag.Float64Var(&opts.ScanlineProbability, "scanline-prob", 0.1, "probability (0.0-1.0) of a scanline appearing each frame")
+	flag.IntVar(&opts.ScanlineIntensity, "scanline-intensity", 5, "intensity (1-10) of scanlines")
+	flag.StringVar(&opts.ScanlineChar, "scanline-char", "", "character to use for scanlines (default: random from current charSet)")
 	flag.Parse()
 
 	// Clamp intensity
@@ -175,6 +231,21 @@ func main() {
 	if opts.Intensity > 10 {
 		opts.Intensity = 10
 	}
+	// Clamp scanline probability
+	if opts.ScanlineProbability < 0.0 {
+		opts.ScanlineProbability = 0.0
+	}
+	if opts.ScanlineProbability > 1.0 {
+		opts.ScanlineProbability = 1.0
+	}
+	// Clamp scanline intensity
+	if opts.ScanlineIntensity < 1 {
+		opts.ScanlineIntensity = 1
+	}
+	if opts.ScanlineIntensity > 10 {
+		opts.ScanlineIntensity = 10
+	}
+
 
 	// Create a local random number generator
 	rGen := rand.New(rand.NewSource(time.Now().UnixNano()))
