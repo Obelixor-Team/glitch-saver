@@ -29,7 +29,7 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // rG
 	if height == 0 {
 		return
 	}
-	y := rGen.Intn(height) // Use rGen
+	y := rGen.Intn(height)                     // Use rGen
 	offset := rGen.Intn(width/2) - (width / 4) // Use rGen
 
 	line := make([]struct {
@@ -61,8 +61,8 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 		return
 	}
 	srcX, srcY := rGen.Intn(width), rGen.Intn(height) // Use rGen
-	blockW := rGen.Intn(width/2) + 1                   // Use rGen
-	blockH := rGen.Intn(height/2) + 1                  // Use rGen
+	blockW := rGen.Intn(width/2) + 1                  // Use rGen
+	blockH := rGen.Intn(height/2) + 1                 // Use rGen
 
 	destX, destY := rGen.Intn(width), rGen.Intn(height) // Use rGen
 
@@ -102,10 +102,10 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand) { // rGen added
 	numGlitch := rGen.Intn(100*intensity) + (50 * intensity) // Use rGen
 	for i := 0; i < numGlitch; i++ {
-		x := rGen.Intn(width) // Use rGen
+		x := rGen.Intn(width)  // Use rGen
 		y := rGen.Intn(height) // Use rGen
 
-		r := rune(glitchChars[rGen.Intn(len(glitchChars))]) // Use rGen
+		r := rune(glitchChars[rGen.Intn(len(glitchChars))])                                // Use rGen
 		style := tcell.StyleDefault.Foreground(glitchColors[rGen.Intn(len(glitchColors))]) // Use rGen
 
 		s.SetContent(x, y, r, nil, style)
@@ -191,7 +191,7 @@ func main() {
 			}
 		case <-ticker.C: // Handle animation tick
 			drawGlitch(s, width, height, *intensity, rGen) // Pass rGen to drawGlitch
-			s.Show()                                 // Render the screen
+			s.Show()                                       // Render the screen
 		}
 	}
 }
