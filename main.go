@@ -53,6 +53,14 @@ var smearBuffer [][]SmearCell
 // staticFrames tracks the remaining duration of a static burst.
 var staticFrames int
 
+// ScrollingBlock represents a block of the screen that is scrolling.
+type ScrollingBlock struct {
+	srcX, srcY, destX, destY, w, h, dx, dy, life int
+	cells                                       [][]SmearCell
+}
+
+var scrollingBlocks []*ScrollingBlock
+
 // GlitchOptions holds all configurable parameters for the glitch effects.
 type GlitchOptions struct {
 	FPS                 int
@@ -73,6 +81,10 @@ type GlitchOptions struct {
 	StaticProbability   float64
 	StaticDuration      int
 	StaticChar          string
+	ScrollEnable        bool
+	ScrollProbability   float64
+	ScrollSpeed         int
+	ScrollDirection     string
 	// Add more options here later
 }
 
@@ -306,6 +318,93 @@ func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *
 	}
 }
 
+// applyScrollingBlocks scrolls blocks of the screen.
+func applyScrollingBlocks(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+	if !opts.ScrollEnable {
+		return
+	}
+
+	// Remove dead blocks
+	newScrollingBlocks := scrollingBlocks[:0]
+	for _, b := range scrollingBlocks {
+		if b.life > 0 {
+			newScrollingBlocks = append(newScrollingBlocks, b)
+		}
+	}
+	scrollingBlocks = newScrollingBlocks
+
+	// Update and draw existing blocks
+	for _, b := range scrollingBlocks {
+		b.life--
+		b.destX += b.dx
+		b.destY += b.dy
+
+		for y := 0; y < b.h; y++ {
+			for x := 0; x < b.w; x++ {
+				if b.destX+x < width && b.destY+y < height && b.destX+x >= 0 && b.destY+y >= 0 {
+					s.SetContent(b.destX+x, b.destY+y, b.cells[y][x].r, nil, b.cells[y][x].style)
+				}
+			}
+		}
+	}
+
+	// Trigger new blocks
+	if rGen.Float64() < opts.ScrollProbability {
+		srcX, srcY := rGen.Intn(width), rGen.Intn(height)
+		blockW := rGen.Intn(width/4) + 5
+		blockH := rGen.Intn(height/4) + 5
+
+		if srcX+blockW > width {
+			blockW = width - srcX
+		}
+		if srcY+blockH > height {
+			blockH = height - srcY
+		}
+
+		cells := make([][]SmearCell, blockH)
+		for y := 0; y < blockH; y++ {
+			cells[y] = make([]SmearCell, blockW)
+			for x := 0; x < blockW; x++ {
+				r, style, _, _ := s.Get(srcX+x, srcY+y)
+				cells[y][x] = SmearCell{r, style, 1}
+			}
+		}
+
+		var dx, dy int
+		switch opts.ScrollDirection {
+		case "horizontal":
+			dx = opts.ScrollSpeed
+			if rGen.Intn(2) == 0 {
+				dx = -dx
+			}
+		case "vertical":
+			dy = opts.ScrollSpeed
+			if rGen.Intn(2) == 0 {
+				dy = -dy
+			}
+		default: // random
+			dx = rGen.Intn(opts.ScrollSpeed*2+1) - opts.ScrollSpeed
+			dy = rGen.Intn(opts.ScrollSpeed*2+1) - opts.ScrollSpeed
+		}
+		if dx == 0 && dy == 0 {
+			dx = 1 // Ensure movement
+		}
+
+		scrollingBlocks = append(scrollingBlocks, &ScrollingBlock{
+			srcX:  srcX,
+			srcY:  srcY,
+			destX: srcX,
+			destY: srcY,
+			w:     blockW,
+			h:     blockH,
+			dx:    dx,
+			dy:    dy,
+			life:  (width + height) / (abs(dx) + abs(dy) + 1),
+			cells: cells,
+		})
+	}
+}
+
 
 // drawGlitch orchestrates various glitch effects on the screen.
 func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) { // opts replaces many args
@@ -341,6 +440,14 @@ func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 	applyScanlineEffect(s, width, height, rGen, opts) // Call new scanline effect
 	applyColorCycle(s, rGen, opts) // Call new color cycle effect
 	applySmear(s, width, height, rGen, opts) // Call new smear effect
+	applyScrollingBlocks(s, width, height, rGen, opts) // Call new scrolling blocks effect
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 func main() {
@@ -365,6 +472,10 @@ func main() {
 	flag.Float64Var(&opts.StaticProbability, "static-prob", 0.01, "probability (0.0-1.0) of a static burst occurring each frame")
 	flag.IntVar(&opts.StaticDuration, "static-duration", 3, "duration of a static burst (in frames)")
 	flag.StringVar(&opts.StaticChar, "static-char", "", "character to use for static bursts (default: random from '. *')")
+	flag.BoolVar(&opts.ScrollEnable, "scroll", false, "enable scrolling blocks effect")
+	flag.Float64Var(&opts.ScrollProbability, "scroll-prob", 0.05, "probability (0.0-1.0) of a new scrolling block appearing each frame")
+	flag.IntVar(&opts.ScrollSpeed, "scroll-speed", 1, "speed of scrolling blocks")
+	flag.StringVar(&opts.ScrollDirection, "scroll-direction", "random", "direction of scrolling blocks (horizontal, vertical, random)")
 	flag.Parse()
 
 	// Clamp intensity
@@ -416,6 +527,17 @@ func main() {
 	// Clamp static duration
 	if opts.StaticDuration < 1 {
 		opts.StaticDuration = 1
+	}
+	// Clamp scroll probability
+	if opts.ScrollProbability < 0.0 {
+		opts.ScrollProbability = 0.0
+	}
+	if opts.ScrollProbability > 1.0 {
+		opts.ScrollProbability = 1.0
+	}
+	// Clamp scroll speed
+	if opts.ScrollSpeed < 1 {
+		opts.ScrollSpeed = 1
 	}
 
 
