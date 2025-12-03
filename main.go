@@ -3,9 +3,9 @@ package main
 import (
 	"flag" // Added
 	"log"
+	"math/rand"
 	"os"
 	"time"
-	"math/rand"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -99,7 +99,7 @@ func blockDistortionGlitch(s tcell.Screen, width, height int) {
 // drawGlitch applies random character corruption and other effects to the screen
 func drawGlitch(s tcell.Screen, width, height, intensity int) { // Added intensity
 	// Character corruption
-	numGlitch := rand.Intn(100 * intensity) + (50 * intensity) // Use intensity
+	numGlitch := rand.Intn(100*intensity) + (50 * intensity) // Use intensity
 	for i := 0; i < numGlitch; i++ {
 		x := rand.Intn(width)
 		y := rand.Intn(height)
@@ -131,8 +131,12 @@ func main() {
 	flag.Parse()
 
 	// Clamp intensity
-	if *intensity < 1 { *intensity = 1 }
-	if *intensity > 10 { *intensity = 10 }
+	if *intensity < 1 {
+		*intensity = 1
+	}
+	if *intensity > 10 {
+		*intensity = 10
+	}
 
 	// Seed the random number generator
 	rand.Seed(time.Now().UnixNano())
@@ -190,7 +194,7 @@ func main() {
 			}
 		case <-ticker.C: // Handle animation tick
 			drawGlitch(s, width, height, *intensity) // Pass intensity to drawGlitch
-			s.Show()                     // Render the screen
+			s.Show()                                 // Render the screen
 		}
 	}
 }
