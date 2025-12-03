@@ -11,18 +11,16 @@ import (
 
 const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
 
+// Using NewRGBColor for explicit color definitions
 var glitchColors = []tcell.Color{
-	tcell.ColorRed,
-	tcell.ColorGreen,
-	tcell.ColorBlue,
-	tcell.ColorMagenta,
-	tcell.ColorYellow,
-	tcell.ColorCyan,
-	tcell.ColorWhite,
-	tcell.ColorLightGreen,
-	tcell.ColorLightCyan,
-	tcell.ColorLightSkyBlue,
-	tcell.ColorLightGoldenrodYellow,
+	tcell.NewRGBColor(0, 0, 0),       // Black
+	tcell.NewRGBColor(255, 0, 0),     // Red
+	tcell.NewRGBColor(0, 255, 0),     // Green
+	tcell.NewRGBColor(255, 255, 0),   // Yellow
+	tcell.NewRGBColor(0, 0, 255),     // Blue
+	tcell.NewRGBColor(255, 0, 255),   // Magenta
+	tcell.NewRGBColor(0, 255, 255),   // Cyan
+	tcell.NewRGBColor(255, 255, 255), // White
 }
 
 // drawGlitch applies random character corruption to the screen
@@ -71,7 +69,14 @@ func main() {
 
 	// Get initial screen dimensions
 	width, height := s.Size()
-	// No longer suppressing unused warnings, as width/height are now used
+
+	// Create a channel for events and a goroutine to listen for them
+	eventChan := make(chan tcell.Event)
+	go func() {
+		for {
+			eventChan <- s.PollEvent()
+		}
+	}()
 
 	// Create a ticker for animation updates (e.g., 30 FPS)
 	ticker := time.NewTicker(time.Second / 30)
@@ -80,7 +85,7 @@ func main() {
 	// Main event loop
 	for {
 		select {
-		case ev := <-s.Events(): // Non-blocking read from event channel
+		case ev := <-eventChan: // Listen on our custom event channel
 			switch ev := ev.(type) {
 			case *tcell.EventResize:
 				width, height = s.Size() // Update dimensions on resize
