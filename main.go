@@ -12,6 +12,7 @@ import (
 
 const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
 const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
+const blockChars = "░▒▓█"
 
 // Using NewRGBColor for explicit color definitions
 var glitchColors = []tcell.Color{
@@ -100,9 +101,11 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // drawGlitch applies random character corruption and other effects to the screen
-func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437 bool) {
+func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437, useBlocks bool) {
 	charSet := glitchChars
-	if useCP437 {
+	if useBlocks {
+		charSet = blockChars
+	} else if useCP437 {
 		charSet = cp437Chars
 	}
 
@@ -112,7 +115,9 @@ func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, u
 		y := rGen.Intn(height)
 
 		r := rune(charSet[rGen.Intn(len(charSet))])
-		style := tcell.StyleDefault.Foreground(glitchColors[rGen.Intn(len(glitchColors))])
+		fg := glitchColors[rGen.Intn(len(glitchColors))]
+		bg := glitchColors[rGen.Intn(len(glitchColors))]
+		style := tcell.StyleDefault.Foreground(fg).Background(bg) // Added background color
 
 		s.SetContent(x, y, r, nil, style)
 	}
@@ -131,6 +136,7 @@ func main() {
 	fps := flag.Int("fps", 30, "frames per second for the animation")
 	intensity := flag.Int("intensity", 5, "glitch intensity (1-10)")
 	useCP437 := flag.Bool("cp437", false, "use Code Page 437 characters for a retro effect")
+	useBlocks := flag.Bool("blocks", false, "use only block characters for a heavy glitch effect")
 	flag.Parse()
 
 	// Clamp intensity
@@ -197,7 +203,7 @@ func main() {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			drawGlitch(s, width, height, *intensity, rGen, *useCP437)
+			drawGlitch(s, width, height, *intensity, rGen, *useCP437, *useBlocks)
 			s.Show()
 		}
 	}
