@@ -121,8 +121,15 @@ func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, u
 
 		r := runes[rGen.Intn(len(runes))]
 		fg := glitchColors[rGen.Intn(len(glitchColors))]
-		bg := glitchColors[rGen.Intn(len(glitchColors))]
-		style := tcell.StyleDefault.Foreground(fg).Background(bg) // Added background color
+
+		// Start with default style (foreground only)
+		style := tcell.StyleDefault.Foreground(fg)
+
+		// Add background color only for special modes
+		if useBlocks || useCP437 {
+			bg := glitchColors[rGen.Intn(len(glitchColors))]
+			style = style.Background(bg)
+		}
 
 		s.SetContent(x, y, r, nil, style)
 	}
