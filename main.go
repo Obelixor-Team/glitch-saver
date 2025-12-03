@@ -11,7 +11,7 @@ import (
 )
 
 const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
-const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
+const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜⛛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
 const blockChars = "░▒▓█"
 
 // Using NewRGBColor for explicit color definitions
@@ -26,6 +26,14 @@ var glitchColors = []tcell.Color{
 	tcell.NewRGBColor(255, 255, 255), // White
 }
 
+// Point represents a coordinate on the screen.
+type Point struct {
+	X, Y int
+}
+
+// cyclingCells holds the state of cells that are cycling colors.
+var cyclingCells = make(map[Point]int)
+
 // GlitchOptions holds all configurable parameters for the glitch effects.
 type GlitchOptions struct {
 	FPS                 int
@@ -37,6 +45,8 @@ type GlitchOptions struct {
 	ScanlineProbability float64
 	ScanlineIntensity   int
 	ScanlineChar        string
+	ColorCycleEnable    bool
+	ColorCycleSpeed     int
 	// Add more options here later
 }
 
@@ -136,6 +146,13 @@ func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, cha
 		}
 
 		s.SetContent(x, y, r, nil, style)
+
+		// Add to color cycling
+		if opts.ColorCycleEnable {
+			if rGen.Float64() < 0.1 { // 10% chance to add to cycling
+				cyclingCells[Point{x, y}] = rGen.Intn(len(glitchColors))
+			}
+		}
 	}
 }
 
@@ -149,7 +166,7 @@ func applyScanlineEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opt
 	}
 
 	y := rGen.Intn(height) // Random row
-	
+
 	scanlineRunes := []rune(glitchChars)
 	if opts.ScanlineChar != "" {
 		scanlineRunes = []rune(opts.ScanlineChar)
@@ -184,6 +201,38 @@ func applyScanlineEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opt
 	}
 }
 
+// applyColorCycle updates the colors of cycling cells.
+func applyColorCycle(s tcell.Screen, rGen *rand.Rand, opts *GlitchOptions) {
+	if !opts.ColorCycleEnable {
+		return
+	}
+
+	for p, colorIndex := range cyclingCells {
+		rawVal, style, _ := s.Get(p.X, p.Y)
+		var r rune
+		if len(rawVal) > 0 {
+			r = []rune(rawVal)[0]
+		}
+		if r == 0 {
+			delete(cyclingCells, p)
+			continue
+		}
+
+		// Update color index
+		colorIndex = (colorIndex + opts.ColorCycleSpeed) % len(glitchColors)
+		cyclingCells[p] = colorIndex
+		
+		newStyle := style.Foreground(glitchColors[colorIndex])
+		
+		if opts.UseBG {
+			bg := glitchColors[(colorIndex+len(glitchColors)/2)%len(glitchColors)] // Offset background color
+			newStyle = newStyle.Background(bg)
+		}
+
+		s.SetContent(p.X, p.Y, r, nil, newStyle)
+	}
+}
+
 
 // drawGlitch orchestrates various glitch effects on the screen.
 func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) { // opts replaces many args
@@ -207,6 +256,7 @@ func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 	}
 
 	applyScanlineEffect(s, width, height, rGen, opts) // Call new scanline effect
+	applyColorCycle(s, rGen, opts) // Call new color cycle effect
 }
 
 func main() {
@@ -222,6 +272,8 @@ func main() {
 	flag.Float64Var(&opts.ScanlineProbability, "scanline-prob", 0.1, "probability (0.0-1.0) of a scanline appearing each frame")
 	flag.IntVar(&opts.ScanlineIntensity, "scanline-intensity", 5, "intensity (1-10) of scanlines")
 	flag.StringVar(&opts.ScanlineChar, "scanline-char", "", "character to use for scanlines (default: random from current charSet)")
+	flag.BoolVar(&opts.ColorCycleEnable, "color-cycle", false, "enable color cycling effect")
+	flag.IntVar(&opts.ColorCycleSpeed, "color-cycle-speed", 5, "speed (1-10) of color cycling")
 	flag.Parse()
 
 	// Clamp intensity
@@ -244,6 +296,13 @@ func main() {
 	}
 	if opts.ScanlineIntensity > 10 {
 		opts.ScanlineIntensity = 10
+	}
+	// Clamp color cycle speed
+	if opts.ColorCycleSpeed < 1 {
+		opts.ColorCycleSpeed = 1
+	}
+	if opts.ColorCycleSpeed > 10 {
+		opts.ColorCycleSpeed = 10
 	}
 
 
