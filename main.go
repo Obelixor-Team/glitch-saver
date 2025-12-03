@@ -11,8 +11,9 @@ import (
 )
 
 const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
-const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜⛛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ² ■ "
+const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜⛛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
 const blockChars = "░▒▓█"
+const staticChars = " .*"
 
 // Using NewRGBColor for explicit color definitions
 var glitchColors = []tcell.Color{
@@ -23,6 +24,12 @@ var glitchColors = []tcell.Color{
 	tcell.NewRGBColor(0, 0, 255),     // Blue
 	tcell.NewRGBColor(255, 0, 255),   // Magenta
 	tcell.NewRGBColor(0, 255, 255),   // Cyan
+	tcell.NewRGBColor(255, 255, 255), // White
+}
+
+var staticColors = []tcell.Color{
+	tcell.NewRGBColor(0, 0, 0),       // Black
+	tcell.NewRGBColor(128, 128, 128), // Grey
 	tcell.NewRGBColor(255, 255, 255), // White
 }
 
@@ -38,10 +45,13 @@ var cyclingCells = make(map[Point]int)
 type SmearCell struct {
 	r     rune
 	style tcell.Style
-	life  int
+	lifetime  int
 }
 
 var smearBuffer [][]SmearCell
+
+// staticFrames tracks the remaining duration of a static burst.
+var staticFrames int
 
 // GlitchOptions holds all configurable parameters for the glitch effects.
 type GlitchOptions struct {
@@ -59,6 +69,10 @@ type GlitchOptions struct {
 	SmearEnable         bool
 	SmearProbability    float64
 	SmearLength         int
+	StaticEnable        bool
+	StaticProbability   float64
+	StaticDuration      int
+	StaticChar          string
 	// Add more options here later
 }
 
@@ -271,9 +285,40 @@ func applySmear(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 	}
 }
 
+// applyStaticBurst fills the screen with static noise.
+func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+	staticRunes := []rune(staticChars)
+	if opts.StaticChar != "" {
+		staticRunes = []rune(opts.StaticChar)
+	}
+	
+	numStaticChars := (width * height) / 4 // Cover a quarter of the screen with static
+	for i := 0; i < numStaticChars; i++ {
+		x := rGen.Intn(width)
+		y := rGen.Intn(height)
+		
+		r := staticRunes[rGen.Intn(len(staticRunes))]
+		fg := staticColors[rGen.Intn(len(staticColors))]
+		bg := staticColors[rGen.Intn(len(staticColors))]
+		
+		style := tcell.StyleDefault.Foreground(fg).Background(bg)
+		s.SetContent(x, y, r, nil, style)
+	}
+}
+
 
 // drawGlitch orchestrates various glitch effects on the screen.
 func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) { // opts replaces many args
+	if staticFrames > 0 {
+		applyStaticBurst(s, width, height, rGen, opts)
+		staticFrames--
+		return
+	}
+	if opts.StaticEnable && rGen.Float64() < opts.StaticProbability {
+		staticFrames = opts.StaticDuration
+		return
+	}
+
 	var charSet []rune
 	if opts.UseBlocks {
 		charSet = []rune(blockChars)
@@ -316,6 +361,10 @@ func main() {
 	flag.BoolVar(&opts.SmearEnable, "smear", false, "enable character smearing/trails effect")
 	flag.Float64Var(&opts.SmearProbability, "smear-prob", 0.1, "probability (0.0-1.0) of a character starting to smear")
 	flag.IntVar(&opts.SmearLength, "smear-length", 5, "length of the smear trail (in frames)")
+	flag.BoolVar(&opts.StaticEnable, "static", false, "enable static burst effect")
+	flag.Float64Var(&opts.StaticProbability, "static-prob", 0.01, "probability (0.0-1.0) of a static burst occurring each frame")
+	flag.IntVar(&opts.StaticDuration, "static-duration", 3, "duration of a static burst (in frames)")
+	flag.StringVar(&opts.StaticChar, "static-char", "", "character to use for static bursts (default: random from '. *')")
 	flag.Parse()
 
 	// Clamp intensity
@@ -356,6 +405,17 @@ func main() {
 	// Clamp smear length
 	if opts.SmearLength < 1 {
 		opts.SmearLength = 1
+	}
+	// Clamp static probability
+	if opts.StaticProbability < 0.0 {
+		opts.StaticProbability = 0.0
+	}
+	if opts.StaticProbability > 1.0 {
+		opts.StaticProbability = 1.0
+	}
+	// Clamp static duration
+	if opts.StaticDuration < 1 {
+		opts.StaticDuration = 1
 	}
 
 
