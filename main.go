@@ -26,8 +26,18 @@ var glitchColors = []tcell.Color{
 	tcell.NewRGBColor(255, 255, 255), // White
 }
 
+// GlitchOptions holds all configurable parameters for the glitch effects.
+type GlitchOptions struct {
+	FPS         int
+	Intensity   int
+	UseCP437    bool
+	UseBlocks   bool
+	UseBG       bool
+	// Add more options here later
+}
+
 // shiftLineGlitch shifts a random line horizontally
-func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
+func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // opts added
 	if height == 0 {
 		return
 	}
@@ -60,7 +70,7 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // blockDistortionGlitch copies a random block of the screen to another random location
-func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
+func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // opts added
 	if width == 0 || height == 0 {
 		return
 	}
@@ -105,8 +115,8 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // applyCharCorruption draws random characters with glitch effects to the screen.
-func applyCharCorruption(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, charSet []rune, fgColors []tcell.Color, useBG bool, bgColors []tcell.Color) {
-	numGlitch := rGen.Intn(100*intensity) + (50 * intensity)
+func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, charSet []rune, fgColors []tcell.Color, opts *GlitchOptions, bgColors []tcell.Color) {
+	numGlitch := rGen.Intn(100*opts.Intensity) + (50 * opts.Intensity)
 	for i := 0; i < numGlitch; i++ {
 		x := rGen.Intn(width)
 		y := rGen.Intn(height)
@@ -116,7 +126,7 @@ func applyCharCorruption(s tcell.Screen, width, height, intensity int, rGen *ran
 
 		style := tcell.StyleDefault.Foreground(fg)
 
-		if useBG {
+		if opts.UseBG {
 			bg := bgColors[rGen.Intn(len(bgColors))]
 			style = style.Background(bg)
 		}
@@ -126,17 +136,17 @@ func applyCharCorruption(s tcell.Screen, width, height, intensity int, rGen *ran
 }
 
 // drawGlitch orchestrates various glitch effects on the screen.
-func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437, useBlocks, useBG bool) { // Added useBG
+func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) { // opts replaces many args
 	var charSet []rune
-	if useBlocks {
+	if opts.UseBlocks {
 		charSet = []rune(blockChars)
-	} else if useCP437 {
+	} else if opts.UseCP437 {
 		charSet = []rune(cp437Chars)
 	} else {
 		charSet = []rune(glitchChars)
 	}
 
-	applyCharCorruption(s, width, height, intensity, rGen, charSet, glitchColors, useBG, glitchColors)
+	applyCharCorruption(s, width, height, rGen, charSet, glitchColors, opts, glitchColors)
 
 	if rGen.Intn(10) < 2 {
 		shiftLineGlitch(s, width, height, rGen)
@@ -148,20 +158,22 @@ func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, u
 }
 
 func main() {
-	// Define command-line flags
-	fps := flag.Int("fps", 30, "frames per second for the animation")
-	intensity := flag.Int("intensity", 5, "glitch intensity (1-10)")
-	useCP437 := flag.Bool("cp437", false, "use Code Page 437 characters for a retro effect")
-	useBlocks := flag.Bool("blocks", false, "use only block characters for a heavy glitch effect")
-	useBG := flag.Bool("bg", false, "enable random background coloring") // Added useBG flag
+	var opts GlitchOptions
+
+	// Define command-line flags and populate opts
+	flag.IntVar(&opts.FPS, "fps", 30, "frames per second for the animation")
+	flag.IntVar(&opts.Intensity, "intensity", 5, "glitch intensity (1-10)")
+	flag.BoolVar(&opts.UseCP437, "cp437", false, "use Code Page 437 characters for a retro effect")
+	flag.BoolVar(&opts.UseBlocks, "blocks", false, "use only block characters for a heavy glitch effect")
+	flag.BoolVar(&opts.UseBG, "bg", false, "enable random background coloring")
 	flag.Parse()
 
 	// Clamp intensity
-	if *intensity < 1 {
-		*intensity = 1
+	if opts.Intensity < 1 {
+		opts.Intensity = 1
 	}
-	if *intensity > 10 {
-		*intensity = 10
+	if opts.Intensity > 10 {
+		opts.Intensity = 10
 	}
 
 	// Create a local random number generator
@@ -202,7 +214,7 @@ func main() {
 	}()
 
 	// Create a ticker for animation updates based on fps flag
-	ticker := time.NewTicker(time.Second / time.Duration(*fps))
+	ticker := time.NewTicker(time.Second / time.Duration(opts.FPS))
 	defer ticker.Stop()
 
 	// Main event loop
@@ -220,7 +232,7 @@ func main() {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			drawGlitch(s, width, height, *intensity, rGen, *useCP437, *useBlocks, *useBG)
+			drawGlitch(s, width, height, rGen, &opts) // Pass opts struct
 			s.Show()
 		}
 	}
