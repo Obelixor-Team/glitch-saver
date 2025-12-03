@@ -1,0 +1,22 @@
+run:
+  # The default timeout is 1m, which might not be enough for a large project.
+  timeout: 5m
+
+linters:
+  # We would explicitly enable the linters we want.
+  enable:
+    - gofmt
+    - govet
+    - staticcheck
+    - unused
+    - errcheck
+    - ineffassign
+    - typecheck
+
+issues:
+  # Exclude all linters from running on vendor-related code.
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test.go
+      linters:
+        - errcheck # Don't check for unhandled errors in tests, it's common.
