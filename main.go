@@ -365,7 +365,11 @@ func applyScrollingBlocks(s tcell.Screen, width, height int, rGen *rand.Rand, op
 		for y := 0; y < blockH; y++ {
 			cells[y] = make([]SmearCell, blockW)
 			for x := 0; x < blockW; x++ {
-				r, style, _, _ := s.Get(srcX+x, srcY+y)
+				rawVal, style, _ := s.Get(srcX+x, srcY+y)
+				var r rune
+				if len(rawVal) > 0 {
+					r = []rune(rawVal)[0]
+				}
 				cells[y][x] = SmearCell{r, style, 1}
 			}
 		}
