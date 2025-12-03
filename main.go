@@ -105,7 +105,7 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // drawGlitch applies random character corruption and other effects to the screen
-func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437, useBlocks bool) {
+func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437, useBlocks, useBG bool) { // Added useBG
 	charSet := glitchChars
 	if useBlocks {
 		charSet = blockChars
@@ -122,11 +122,9 @@ func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, u
 		r := runes[rGen.Intn(len(runes))]
 		fg := glitchColors[rGen.Intn(len(glitchColors))]
 
-		// Start with default style (foreground only)
 		style := tcell.StyleDefault.Foreground(fg)
 
-		// Add background color only for special modes
-		if useBlocks || useCP437 {
+		if useBG { // Use the new flag for background coloring
 			bg := glitchColors[rGen.Intn(len(glitchColors))]
 			style = style.Background(bg)
 		}
@@ -149,6 +147,7 @@ func main() {
 	intensity := flag.Int("intensity", 5, "glitch intensity (1-10)")
 	useCP437 := flag.Bool("cp437", false, "use Code Page 437 characters for a retro effect")
 	useBlocks := flag.Bool("blocks", false, "use only block characters for a heavy glitch effect")
+	useBG := flag.Bool("bg", false, "enable random background coloring") // Added useBG flag
 	flag.Parse()
 
 	// Clamp intensity
@@ -215,7 +214,7 @@ func main() {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			drawGlitch(s, width, height, *intensity, rGen, *useCP437, *useBlocks)
+			drawGlitch(s, width, height, *intensity, rGen, *useCP437, *useBlocks, *useBG)
 			s.Show()
 		}
 	}
