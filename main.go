@@ -41,9 +41,9 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 	for x := 0; x < width; x++ {
 		rawVal, style, _ := s.Get(x, y)
 		var r rune
-		if len(rawVal) > 0 { // Check if string is not empty
+		if len(rawVal) > 0 {
 			r = []rune(rawVal)[0]
-		} // Else, r remains its zero value (0)
+		}
 		line[x].r = r
 		line[x].style = style
 	}
@@ -57,15 +57,15 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // blockDistortionGlitch copies a random block of the screen to another random location
-func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // rGen added
+func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 	if width == 0 || height == 0 {
 		return
 	}
-	srcX, srcY := rGen.Intn(width), rGen.Intn(height) // Use rGen
-	blockW := rGen.Intn(width/2) + 1                  // Use rGen
-	blockH := rGen.Intn(height/2) + 1                 // Use rGen
+	srcX, srcY := rGen.Intn(width), rGen.Intn(height)
+	blockW := rGen.Intn(width/2) + 1
+	blockH := rGen.Intn(height/2) + 1
 
-	destX, destY := rGen.Intn(width), rGen.Intn(height) // Use rGen
+	destX, destY := rGen.Intn(width), rGen.Intn(height)
 
 	block := make([][]struct {
 		r     rune
@@ -81,9 +81,9 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 			if srcX+x < width && srcY+y < height {
 				rawVal, style, _ := s.Get(srcX+x, srcY+y)
 				var r rune
-				if len(rawVal) > 0 { // Check if string is not empty
+				if len(rawVal) > 0 {
 					r = []rune(rawVal)[0]
-				} // Else, r remains its zero value (0)
+				}
 				block[y][x].r = r
 				block[y][x].style = style
 			}
@@ -100,24 +100,29 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // drawGlitch applies random character corruption and other effects to the screen
-func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand) { // rGen added
-	numGlitch := rGen.Intn(100*intensity) + (50 * intensity) // Use rGen
-	for i := 0; i < numGlitch; i++ {
-		x := rGen.Intn(width)  // Use rGen
-		y := rGen.Intn(height) // Use rGen
+func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437 bool) {
+	charSet := glitchChars
+	if useCP437 {
+		charSet = cp437Chars
+	}
 
-		r := rune(glitchChars[rGen.Intn(len(glitchChars))])                                // Use rGen
-		style := tcell.StyleDefault.Foreground(glitchColors[rGen.Intn(len(glitchColors))]) // Use rGen
+	numGlitch := rGen.Intn(100*intensity) + (50 * intensity)
+	for i := 0; i < numGlitch; i++ {
+		x := rGen.Intn(width)
+		y := rGen.Intn(height)
+
+		r := rune(charSet[rGen.Intn(len(charSet))])
+		style := tcell.StyleDefault.Foreground(glitchColors[rGen.Intn(len(glitchColors))])
 
 		s.SetContent(x, y, r, nil, style)
 	}
 
-	if rGen.Intn(10) < 2 { // Use rGen
-		shiftLineGlitch(s, width, height, rGen) // Pass rGen
+	if rGen.Intn(10) < 2 {
+		shiftLineGlitch(s, width, height, rGen)
 	}
 
-	if rGen.Intn(10) < 1 { // Use rGen
-		blockDistortionGlitch(s, width, height, rGen) // Pass rGen
+	if rGen.Intn(10) < 1 {
+		blockDistortionGlitch(s, width, height, rGen)
 	}
 }
 
@@ -125,6 +130,7 @@ func main() {
 	// Define command-line flags
 	fps := flag.Int("fps", 30, "frames per second for the animation")
 	intensity := flag.Int("intensity", 5, "glitch intensity (1-10)")
+	useCP437 := flag.Bool("cp437", false, "use Code Page 437 characters for a retro effect")
 	flag.Parse()
 
 	// Clamp intensity
@@ -136,7 +142,7 @@ func main() {
 	}
 
 	// Create a local random number generator
-	rGen := rand.New(rand.NewSource(time.Now().UnixNano())) // Changed: local generator
+	rGen := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// Initialize tcell screen
 	s, err := tcell.NewScreen()
@@ -191,8 +197,8 @@ func main() {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			drawGlitch(s, width, height, *intensity, rGen) // Pass rGen to drawGlitch
-			s.Show()                                       // Render the screen
+			drawGlitch(s, width, height, *intensity, rGen, *useCP437)
+			s.Show()
 		}
 	}
 }
