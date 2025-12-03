@@ -286,10 +286,10 @@ func applySmear(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			if smearBuffer[y][x].life > 0 {
-				smearBuffer[y][x].life--
+			if smearBuffer[y][x].lifetime > 0 {
+				smearBuffer[y][x].lifetime--
 				s.SetContent(x, y, smearBuffer[y][x].r, nil, smearBuffer[y][x].style.Dim(true))
-				if smearBuffer[y][x].life == 0 {
+				if smearBuffer[y][x].lifetime == 0 {
 					s.SetContent(x, y, ' ', nil, tcell.StyleDefault)
 				}
 			}
