@@ -19,6 +19,7 @@ gofmt.sh
 # Build artifacts
 bin/
 pkg/
+glitch-saver
 
 # Editor/IDE specific files
 .idea/
