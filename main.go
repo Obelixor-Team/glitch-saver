@@ -11,7 +11,7 @@ import (
 )
 
 const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
-const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜⛛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
+const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜⛛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ² ■ "
 const blockChars = "░▒▓█"
 
 // Using NewRGBColor for explicit color definitions
@@ -34,6 +34,15 @@ type Point struct {
 // cyclingCells holds the state of cells that are cycling colors.
 var cyclingCells = make(map[Point]int)
 
+// SmearCell represents a cell with a trail life.
+type SmearCell struct {
+	r     rune
+	style tcell.Style
+	life  int
+}
+
+var smearBuffer [][]SmearCell
+
 // GlitchOptions holds all configurable parameters for the glitch effects.
 type GlitchOptions struct {
 	FPS                 int
@@ -47,6 +56,9 @@ type GlitchOptions struct {
 	ScanlineChar        string
 	ColorCycleEnable    bool
 	ColorCycleSpeed     int
+	SmearEnable         bool
+	SmearProbability    float64
+	SmearLength         int
 	// Add more options here later
 }
 
@@ -153,6 +165,13 @@ func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, cha
 				cyclingCells[Point{x, y}] = rGen.Intn(len(glitchColors))
 			}
 		}
+
+		// Add to smear buffer
+		if opts.SmearEnable {
+			if rGen.Float64() < opts.SmearProbability {
+				smearBuffer[y][x] = SmearCell{r, style, opts.SmearLength}
+			}
+		}
 	}
 }
 
@@ -233,6 +252,25 @@ func applyColorCycle(s tcell.Screen, rGen *rand.Rand, opts *GlitchOptions) {
 	}
 }
 
+// applySmear draws and fades smeared characters.
+func applySmear(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+	if !opts.SmearEnable {
+		return
+	}
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if smearBuffer[y][x].life > 0 {
+				smearBuffer[y][x].life--
+				s.SetContent(x, y, smearBuffer[y][x].r, nil, smearBuffer[y][x].style.Dim(true))
+				if smearBuffer[y][x].life == 0 {
+					s.SetContent(x, y, ' ', nil, tcell.StyleDefault)
+				}
+			}
+		}
+	}
+}
+
 
 // drawGlitch orchestrates various glitch effects on the screen.
 func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) { // opts replaces many args
@@ -257,6 +295,7 @@ func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 
 	applyScanlineEffect(s, width, height, rGen, opts) // Call new scanline effect
 	applyColorCycle(s, rGen, opts) // Call new color cycle effect
+	applySmear(s, width, height, rGen, opts) // Call new smear effect
 }
 
 func main() {
@@ -274,6 +313,9 @@ func main() {
 	flag.StringVar(&opts.ScanlineChar, "scanline-char", "", "character to use for scanlines (default: random from current charSet)")
 	flag.BoolVar(&opts.ColorCycleEnable, "color-cycle", false, "enable color cycling effect")
 	flag.IntVar(&opts.ColorCycleSpeed, "color-cycle-speed", 5, "speed (1-10) of color cycling")
+	flag.BoolVar(&opts.SmearEnable, "smear", false, "enable character smearing/trails effect")
+	flag.Float64Var(&opts.SmearProbability, "smear-prob", 0.1, "probability (0.0-1.0) of a character starting to smear")
+	flag.IntVar(&opts.SmearLength, "smear-length", 5, "length of the smear trail (in frames)")
 	flag.Parse()
 
 	// Clamp intensity
@@ -303,6 +345,17 @@ func main() {
 	}
 	if opts.ColorCycleSpeed > 10 {
 		opts.ColorCycleSpeed = 10
+	}
+	// Clamp smear probability
+	if opts.SmearProbability < 0.0 {
+		opts.SmearProbability = 0.0
+	}
+	if opts.SmearProbability > 1.0 {
+		opts.SmearProbability = 1.0
+	}
+	// Clamp smear length
+	if opts.SmearLength < 1 {
+		opts.SmearLength = 1
 	}
 
 
@@ -335,6 +388,12 @@ func main() {
 	// Get initial screen dimensions
 	width, height := s.Size()
 
+	// Initialize smearBuffer
+	smearBuffer = make([][]SmearCell, height)
+	for i := range smearBuffer {
+		smearBuffer[i] = make([]SmearCell, width)
+	}
+
 	// Create a channel for events and a goroutine to listen for them
 	eventChan := make(chan tcell.Event)
 	go func() {
@@ -354,6 +413,11 @@ func main() {
 			switch ev := ev.(type) {
 			case *tcell.EventResize:
 				width, height = s.Size() // Update dimensions on resize
+				// Re-initialize smearBuffer on resize
+				smearBuffer = make([][]SmearCell, height)
+				for i := range smearBuffer {
+					smearBuffer[i] = make([]SmearCell, width)
+				}
 				s.Clear()                // Clear screen on resize to avoid artifacts
 				s.Sync()                 // Sync screen after resize
 			case *tcell.EventKey:
