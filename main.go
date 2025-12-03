@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag" // Added
 	"log"
 	"os"
 	"time"
@@ -95,11 +96,10 @@ func blockDistortionGlitch(s tcell.Screen, width, height int) {
 	}
 }
 
-
 // drawGlitch applies random character corruption and other effects to the screen
-func drawGlitch(s tcell.Screen, width, height int) {
+func drawGlitch(s tcell.Screen, width, height, intensity int) { // Added intensity
 	// Character corruption
-	numGlitch := rand.Intn(100) + 50 // Random number of glitches per frame
+	numGlitch := rand.Intn(100 * intensity) + (50 * intensity) // Use intensity
 	for i := 0; i < numGlitch; i++ {
 		x := rand.Intn(width)
 		y := rand.Intn(height)
@@ -125,6 +125,15 @@ func drawGlitch(s tcell.Screen, width, height int) {
 }
 
 func main() {
+	// Define command-line flags
+	fps := flag.Int("fps", 30, "frames per second for the animation")
+	intensity := flag.Int("intensity", 5, "glitch intensity (1-10)")
+	flag.Parse()
+
+	// Clamp intensity
+	if *intensity < 1 { *intensity = 1 }
+	if *intensity > 10 { *intensity = 10 }
+
 	// Seed the random number generator
 	rand.Seed(time.Now().UnixNano())
 	// Initialize tcell screen
@@ -161,8 +170,8 @@ func main() {
 		}
 	}()
 
-	// Create a ticker for animation updates (e.g., 30 FPS)
-	ticker := time.NewTicker(time.Second / 30)
+	// Create a ticker for animation updates based on fps flag
+	ticker := time.NewTicker(time.Second / time.Duration(*fps))
 	defer ticker.Stop()
 
 	// Main event loop
@@ -180,7 +189,7 @@ func main() {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			drawGlitch(s, width, height) // Call the glitch drawing function
+			drawGlitch(s, width, height, *intensity) // Pass intensity to drawGlitch
 			s.Show()                     // Render the screen
 		}
 	}
