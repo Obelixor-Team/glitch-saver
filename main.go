@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag" // Added
+	"flag"
 	"log"
 	"math/rand"
 	"os"
@@ -11,6 +11,7 @@ import (
 )
 
 const glitchChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':\",./<>?`~ "
+const cp437Chars = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
 
 // Using NewRGBColor for explicit color definitions
 var glitchColors = []tcell.Color{
@@ -25,12 +26,12 @@ var glitchColors = []tcell.Color{
 }
 
 // shiftLineGlitch shifts a random line horizontally
-func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // rGen added
+func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 	if height == 0 {
 		return
 	}
-	y := rGen.Intn(height)                     // Use rGen
-	offset := rGen.Intn(width/2) - (width / 4) // Use rGen
+	y := rGen.Intn(height)
+	offset := rGen.Intn(width/2) - (width / 4)
 
 	line := make([]struct {
 		r     rune
