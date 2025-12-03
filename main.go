@@ -37,19 +37,27 @@ func main() {
 	_ = width // Suppress unused warning for now
 	_ = height // Suppress unused warning for now
 
+	// Create a ticker for animation updates (e.g., 30 FPS)
+	ticker := time.NewTicker(time.Second / 30)
+	defer ticker.Stop()
+
 	// Main event loop
 	for {
-		ev := s.PollEvent()
-		switch ev := ev.(type) {
-		case *tcell.EventResize:
-			width, height = s.Size() // Update dimensions on resize
-			s.Sync()
-		case *tcell.EventKey:
-			if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
-				return
+		select {
+		case ev := <-s.Events(): // Non-blocking read from event channel
+			switch ev := ev.(type) {
+			case *tcell.EventResize:
+				width, height = s.Size() // Update dimensions on resize
+				s.Sync()                 // Sync screen after resize
+			case *tcell.EventKey:
+				if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
+					return // Exit the application
+				}
 			}
+		case <-ticker.C: // Handle animation tick
+			// Placeholder for update logic (e.g., update glitch state)
+			// Placeholder for drawing logic
+			s.Show() // Render the screen
 		}
-		// Add a small delay to prevent busy-waiting for events, though tcell.PollEvent() is blocking
-		time.Sleep(time.Millisecond * 50)
 	}
 }
