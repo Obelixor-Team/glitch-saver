@@ -25,26 +25,24 @@ var glitchColors = []tcell.Color{
 }
 
 // shiftLineGlitch shifts a random line horizontally
-func shiftLineGlitch(s tcell.Screen, width, height int) {
-	if height == 0 { // Avoid panic on empty screen
+func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // rGen added
+	if height == 0 {
 		return
 	}
-	y := rand.Intn(height)
-	offset := rand.Intn(width/2) - (width / 4) // Shift left or right
+	y := rGen.Intn(height) // Use rGen
+	offset := rGen.Intn(width/2) - (width / 4) // Use rGen
 
-	// Buffer the line
 	line := make([]struct {
 		r     rune
 		style tcell.Style
 	}, width)
 
 	for x := 0; x < width; x++ {
-		r, _, style, _ := s.GetContent(x, y)
+		r, style, _, _ := s.Get(x, y) // Changed from GetContent
 		line[x].r = r
 		line[x].style = style
 	}
 
-	// Write the line back with an offset
 	for x := 0; x < width; x++ {
 		newX := x + offset
 		if newX >= 0 && newX < width {
@@ -54,19 +52,16 @@ func shiftLineGlitch(s tcell.Screen, width, height int) {
 }
 
 // blockDistortionGlitch copies a random block of the screen to another random location
-func blockDistortionGlitch(s tcell.Screen, width, height int) {
+func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // rGen added
 	if width == 0 || height == 0 {
 		return
 	}
-	// Define the source block
-	srcX, srcY := rand.Intn(width), rand.Intn(height)
-	blockW := rand.Intn(width/2) + 1  // Max half screen width
-	blockH := rand.Intn(height/2) + 1 // Max half screen height
+	srcX, srcY := rGen.Intn(width), rGen.Intn(height) // Use rGen
+	blockW := rGen.Intn(width/2) + 1                   // Use rGen
+	blockH := rGen.Intn(height/2) + 1                  // Use rGen
 
-	// Define the destination
-	destX, destY := rand.Intn(width), rand.Intn(height)
+	destX, destY := rGen.Intn(width), rGen.Intn(height) // Use rGen
 
-	// Buffer the block
 	block := make([][]struct {
 		r     rune
 		style tcell.Style
@@ -79,14 +74,13 @@ func blockDistortionGlitch(s tcell.Screen, width, height int) {
 		}, blockW)
 		for x := 0; x < blockW; x++ {
 			if srcX+x < width && srcY+y < height {
-				r, _, style, _ := s.GetContent(srcX+x, srcY+y)
+				r, style, _, _ := s.Get(srcX+x, srcY+y) // Changed from GetContent
 				block[y][x].r = r
 				block[y][x].style = style
 			}
 		}
 	}
 
-	// Write the block to the destination
 	for y := 0; y < blockH; y++ {
 		for x := 0; x < blockW; x++ {
 			if destX+x < width && destY+y < height {
@@ -97,30 +91,24 @@ func blockDistortionGlitch(s tcell.Screen, width, height int) {
 }
 
 // drawGlitch applies random character corruption and other effects to the screen
-func drawGlitch(s tcell.Screen, width, height, intensity int) { // Added intensity
-	// Character corruption
-	numGlitch := rand.Intn(100*intensity) + (50 * intensity) // Use intensity
+func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand) { // rGen added
+	numGlitch := rGen.Intn(100*intensity) + (50 * intensity) // Use rGen
 	for i := 0; i < numGlitch; i++ {
-		x := rand.Intn(width)
-		y := rand.Intn(height)
+		x := rGen.Intn(width) // Use rGen
+		y := rGen.Intn(height) // Use rGen
 
-		// Get a random character
-		r := rune(glitchChars[rand.Intn(len(glitchChars))])
-
-		// Get a random color
-		style := tcell.StyleDefault.Foreground(glitchColors[rand.Intn(len(glitchColors))])
+		r := rune(glitchChars[rGen.Intn(len(glitchChars))]) // Use rGen
+		style := tcell.StyleDefault.Foreground(glitchColors[rGen.Intn(len(glitchColors))]) // Use rGen
 
 		s.SetContent(x, y, r, nil, style)
 	}
 
-	// Line shifts
-	if rand.Intn(10) < 2 { // 20% chance to shift a line
-		shiftLineGlitch(s, width, height)
+	if rGen.Intn(10) < 2 { // Use rGen
+		shiftLineGlitch(s, width, height, rGen) // Pass rGen
 	}
 
-	// Block distortion
-	if rand.Intn(10) < 1 { // 10% chance to distort a block
-		blockDistortionGlitch(s, width, height)
+	if rGen.Intn(10) < 1 { // Use rGen
+		blockDistortionGlitch(s, width, height, rGen) // Pass rGen
 	}
 }
 
@@ -138,8 +126,9 @@ func main() {
 		*intensity = 10
 	}
 
-	// Seed the random number generator
-	rand.Seed(time.Now().UnixNano())
+	// Create a local random number generator
+	rGen := rand.New(rand.NewSource(time.Now().UnixNano())) // Changed: local generator
+
 	// Initialize tcell screen
 	s, err := tcell.NewScreen()
 	if err != nil {
@@ -193,7 +182,7 @@ func main() {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			drawGlitch(s, width, height, *intensity) // Pass intensity to drawGlitch
+			drawGlitch(s, width, height, *intensity, rGen) // Pass rGen to drawGlitch
 			s.Show()                                 // Render the screen
 		}
 	}
