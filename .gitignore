@@ -1,0 +1,38 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.wasm
+*.o
+
+# Test binaries
+*_test
+
+# A .toolchain file is used by `go install` to determine which toolchain to use.
+# https://go.dev/doc/toolchain#go-mod-file
+.toolchain
+
+# Gofmt generated files
+gofmt.sh
+
+# Build artifacts
+bin/
+pkg/
+
+# Editor/IDE specific files
+.idea/
+.vscode/
+*.swp
+*.bak
+*.orig
+
+# MacOS
+.DS_Store
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.*
