@@ -104,33 +104,39 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 	}
 }
 
-// drawGlitch applies random character corruption and other effects to the screen
-func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437, useBlocks, useBG bool) { // Added useBG
-	charSet := glitchChars
-	if useBlocks {
-		charSet = blockChars
-	} else if useCP437 {
-		charSet = cp437Chars
-	}
-	runes := []rune(charSet)
-
+// applyCharCorruption draws random characters with glitch effects to the screen.
+func applyCharCorruption(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, charSet []rune, fgColors []tcell.Color, useBG bool, bgColors []tcell.Color) {
 	numGlitch := rGen.Intn(100*intensity) + (50 * intensity)
 	for i := 0; i < numGlitch; i++ {
 		x := rGen.Intn(width)
 		y := rGen.Intn(height)
 
-		r := runes[rGen.Intn(len(runes))]
-		fg := glitchColors[rGen.Intn(len(glitchColors))]
+		r := charSet[rGen.Intn(len(charSet))]
+		fg := fgColors[rGen.Intn(len(fgColors))]
 
 		style := tcell.StyleDefault.Foreground(fg)
 
-		if useBG { // Use the new flag for background coloring
-			bg := glitchColors[rGen.Intn(len(glitchColors))]
+		if useBG {
+			bg := bgColors[rGen.Intn(len(bgColors))]
 			style = style.Background(bg)
 		}
 
 		s.SetContent(x, y, r, nil, style)
 	}
+}
+
+// drawGlitch orchestrates various glitch effects on the screen.
+func drawGlitch(s tcell.Screen, width, height, intensity int, rGen *rand.Rand, useCP437, useBlocks, useBG bool) { // Added useBG
+	var charSet []rune
+	if useBlocks {
+		charSet = []rune(blockChars)
+	} else if useCP437 {
+		charSet = []rune(cp437Chars)
+	} else {
+		charSet = []rune(glitchChars)
+	}
+
+	applyCharCorruption(s, width, height, intensity, rGen, charSet, glitchColors, useBG, glitchColors)
 
 	if rGen.Intn(10) < 2 {
 		shiftLineGlitch(s, width, height, rGen)
