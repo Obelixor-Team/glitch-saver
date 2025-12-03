@@ -38,7 +38,7 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // rG
 	}, width)
 
 	for x := 0; x < width; x++ {
-		r, style, _, _ := s.Get(x, y) // Changed from GetContent
+		r, style, _ := s.Get(x, y) // Changed from GetContent
 		line[x].r = r
 		line[x].style = style
 	}
@@ -74,7 +74,7 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 		}, blockW)
 		for x := 0; x < blockW; x++ {
 			if srcX+x < width && srcY+y < height {
-				r, style, _, _ := s.Get(srcX+x, srcY+y) // Changed from GetContent
+				r, style, _ := s.Get(srcX+x, srcY+y) // Changed from GetContent
 				block[y][x].r = r
 				block[y][x].style = style
 			}
