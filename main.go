@@ -23,10 +23,39 @@ var glitchColors = []tcell.Color{
 	tcell.NewRGBColor(255, 255, 255), // White
 }
 
-// drawGlitch applies random character corruption to the screen
-func drawGlitch(s tcell.Screen, width, height int) {
-	numGlitch := rand.Intn(100) + 50 // Random number of glitches per frame
+// shiftLineGlitch shifts a random line horizontally
+func shiftLineGlitch(s tcell.Screen, width, height int) {
+	if height == 0 { // Avoid panic on empty screen
+		return
+	}
+	y := rand.Intn(height)
+	offset := rand.Intn(width/2) - (width / 4) // Shift left or right
 
+	// Buffer the line
+	line := make([]struct {
+		r     rune
+		style tcell.Style
+	}, width)
+
+	for x := 0; x < width; x++ {
+		r, _, style, _ := s.GetContent(x, y)
+		line[x].r = r
+		line[x].style = style
+	}
+
+	// Write the line back with an offset
+	for x := 0; x < width; x++ {
+		newX := x + offset
+		if newX >= 0 && newX < width {
+			s.SetContent(newX, y, line[x].r, nil, line[x].style)
+		}
+	}
+}
+
+// drawGlitch applies random character corruption and other effects to the screen
+func drawGlitch(s tcell.Screen, width, height int) {
+	// Character corruption
+	numGlitch := rand.Intn(100) + 50 // Random number of glitches per frame
 	for i := 0; i < numGlitch; i++ {
 		x := rand.Intn(width)
 		y := rand.Intn(height)
@@ -38,6 +67,11 @@ func drawGlitch(s tcell.Screen, width, height int) {
 		style := tcell.StyleDefault.Foreground(glitchColors[rand.Intn(len(glitchColors))])
 
 		s.SetContent(x, y, r, nil, style)
+	}
+
+	// Line shifts
+	if rand.Intn(10) < 2 { // 20% chance to shift a line
+		shiftLineGlitch(s, width, height)
 	}
 }
 
