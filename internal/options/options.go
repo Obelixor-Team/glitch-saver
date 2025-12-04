@@ -45,6 +45,7 @@ type GlitchOptions struct {
 	TunnelEnable            bool
 	TunnelProbability       float64
 	TunnelSpeed             int
+	AllEffectsEnable        bool
 	SavePreset              string
 	LoadPreset              string
 	// Add more options here later
@@ -95,7 +96,46 @@ func ParseOptions() *GlitchOptions {
 	flag.BoolVar(&opts.TunnelEnable, "tunnel", false, "enable tunnel/zoom effect")
 	flag.Float64Var(&opts.TunnelProbability, "tunnel-prob", 0.1, "probability (0.0-1.0) of a tunnel/zoom effect appearing each frame")
 	flag.IntVar(&opts.TunnelSpeed, "tunnel-speed", 1, "speed of the tunnel/zoom effect")
+	flag.BoolVar(&opts.AllEffectsEnable, "all-effects", false, "enable all glitch effects")
 	flag.Parse()
+
+	if opts.AllEffectsEnable {
+		opts.UseCP437 = true
+		opts.UseBlocks = true
+		opts.UseBG = true
+		opts.ScanlineEnable = true
+		opts.ScanlineProbability = 1.0
+		opts.ScanlineIntensity = 10
+		opts.ColorCycleEnable = true
+		opts.ColorCycleSpeed = 10
+		opts.SmearEnable = true
+		opts.SmearProbability = 1.0
+		opts.SmearLength = 10
+		opts.StaticEnable = true
+		opts.StaticProbability = 0.5 // High probability, but not 1.0 to allow other effects
+		opts.StaticDuration = 5
+		opts.ScrollEnable = true
+		opts.ScrollProbability = 0.5 // High probability, but not 1.0 to allow other effects
+		opts.ScrollSpeed = 5
+		opts.JitterEnable = true
+		opts.JitterProbability = 1.0
+		opts.MeltEnable = true
+		opts.MeltProbability = 1.0
+		opts.BitRotEnable = true
+		opts.BitRotProbability = 1.0
+		opts.VerticalLineEnable = true
+		opts.VerticalLineProbability = 1.0
+		opts.InvertColorsEnable = true
+		opts.InvertColorsProbability = 1.0
+		opts.CharScrambleEnable = true
+		opts.CharScrambleProbability = 1.0
+		opts.GhostingEnable = true
+		opts.GhostingProbability = 1.0
+		opts.TunnelEnable = true
+		opts.TunnelProbability = 0.5 // High probability, but not 1.0
+		opts.TunnelSpeed = 5
+		opts.Intensity = 10
+	}
 
 	// Clamp intensity
 	if opts.Intensity < 1 {
