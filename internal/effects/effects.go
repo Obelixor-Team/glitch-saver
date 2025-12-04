@@ -46,6 +46,7 @@ type SmearCell struct {
 }
 
 var smearBuffer [][]SmearCell
+var ghostBuffer [][]SmearCell
 
 // staticFrames tracks the remaining duration of a static burst.
 var staticFrames int
@@ -60,8 +61,10 @@ var scrollingBlocks []*ScrollingBlock
 
 func InitializeEffects(width, height int) {
 	smearBuffer = make([][]SmearCell, height)
+	ghostBuffer = make([][]SmearCell, height)
 	for i := range smearBuffer {
 		smearBuffer[i] = make([]SmearCell, width)
+		ghostBuffer[i] = make([]SmearCell, width)
 	}
 	scrollingBlocks = nil
 	cyclingCells = make(map[Point]int)
@@ -95,6 +98,165 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // op
 		}
 	}
 }
+
+// applyVerticalLineGlitch shifts a random column vertically
+func applyVerticalLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
+	if width == 0 {
+		return
+	}
+	x := rGen.Intn(width)
+	offset := rGen.Intn(height/2) - (height / 4)
+
+	column := make([]struct {
+		r     rune
+		style tcell.Style
+	}, height)
+
+	for y := 0; y < height; y++ {
+		mainc, style, _ := s.Get(x, y)
+		column[y].r = rune(mainc[0])
+		column[y].style = style
+	}
+
+	for y := 0; y < height; y++ {
+		newY := y + offset
+		if newY >= 0 && newY < height {
+			if column[y].r != 0 {
+				s.SetContent(x, newY, column[y].r, nil, column[y].style)
+			}
+		}
+	}
+}
+
+// applyInvertColorsGlitch inverts the colors of a random block of the screen
+func applyInvertColorsGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
+	if width == 0 || height == 0 {
+		return
+	}
+	blockX := rGen.Intn(width)
+	blockY := rGen.Intn(height)
+	blockW := rGen.Intn(width/2) + 1
+	blockH := rGen.Intn(height/2) + 1
+
+	for y := blockY; y < blockY+blockH && y < height; y++ {
+		for x := blockX; x < blockX+blockW && x < width; x++ {
+			mainc, style, _ := s.Get(x, y)
+			fg, bg, _ := style.Deconstruct()
+			newStyle := style.Foreground(bg).Background(fg)
+			s.SetContent(x, y, rune(mainc[0]), nil, newStyle)
+		}
+	}
+}
+
+// applyCharScrambleGlitch scrambles the characters in a random block of the screen
+func applyCharScrambleGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
+	if width == 0 || height == 0 {
+		return
+	}
+	blockX := rGen.Intn(width)
+	blockY := rGen.Intn(height)
+	blockW := rGen.Intn(width/4) + 2
+	blockH := rGen.Intn(height/4) + 2
+
+	// Read the block's content
+	cells := make([][]struct {
+		r     rune
+		style tcell.Style
+	}, blockH)
+	for y := 0; y < blockH; y++ {
+		cells[y] = make([]struct {
+			r     rune
+			style tcell.Style
+		}, blockW)
+		for x := 0; x < blockW; x++ {
+			if blockX+x < width && blockY+y < height {
+				mainc, style, _ := s.Get(blockX+x, blockY+y)
+				cells[y][x].r = rune(mainc[0])
+				cells[y][x].style = style
+			}
+		}
+	}
+
+	// Flatten, shuffle, and rewrite the characters
+	runes := make([]rune, 0, blockW*blockH)
+	for _, row := range cells {
+		for _, cell := range row {
+			runes = append(runes, cell.r)
+		}
+	}
+	rGen.Shuffle(len(runes), func(i, j int) {
+		runes[i], runes[j] = runes[j], runes[i]
+	})
+
+	// Rewrite the scrambled characters
+	i := 0
+	for y := 0; y < blockH; y++ {
+		for x := 0; x < blockW; x++ {
+			if blockX+x < width && blockY+y < height {
+				if i < len(runes) {
+					s.SetContent(blockX+x, blockY+y, runes[i], nil, cells[y][x].style)
+					i++
+				}
+			}
+		}
+	}
+}
+
+// applyTunnelEffect creates a zoom/tunnel effect by shifting characters
+func applyTunnelEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
+	if !opts.TunnelEnable {
+		return
+	}
+	if rGen.Float64() > opts.TunnelProbability {
+		return
+	}
+
+	centerX := width / 2
+	centerY := height / 2
+
+	// Create a temporary buffer to hold the new screen state
+	newScreen := make([][]struct {
+		r     rune
+		style tcell.Style
+	}, height)
+	for i := range newScreen {
+		newScreen[i] = make([]struct {
+			r     rune
+			style tcell.Style
+		}, width)
+	}
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			dx := x - centerX
+			dy := y - centerY
+
+			// Simple zoom in/out logic
+			newX := x + (dx*opts.TunnelSpeed)/10
+			newY := y + (dy*opts.TunnelSpeed)/10
+
+			if newX >= 0 && newX < width && newY >= 0 && newY < height {
+				mainc, style, _ := s.Get(newX, newY)
+				newScreen[y][x].r = rune(mainc[0])
+				newScreen[y][x].style = style
+			} else {
+				newScreen[y][x].r = ' '
+				newScreen[y][x].style = tcell.StyleDefault
+			}
+		}
+	}
+
+	// Apply the new screen state
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			s.SetContent(x, y, newScreen[y][x].r, nil, newScreen[y][x].style)
+		}
+	}
+}
+
+
+
+
 
 // blockDistortionGlitch copies a random block of the screen to another random location
 func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // opts added
@@ -167,6 +329,13 @@ func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, cha
 		if opts.SmearEnable {
 			if rGen.Float64() < opts.SmearProbability {
 				smearBuffer[y][x] = SmearCell{r, style, opts.SmearLength}
+			}
+		}
+
+		// Add to ghost buffer
+		if opts.GhostingEnable {
+			if rGen.Float64() < opts.GhostingProbability {
+				ghostBuffer[y][x] = SmearCell{r, style, 10} // 10 frames lifetime for ghost
 			}
 		}
 	}
@@ -262,6 +431,30 @@ func applySmear(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 		}
 	}
 }
+
+// applyGhostingEffect draws and fades ghosted characters.
+func applyGhostingEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
+	if !opts.GhostingEnable {
+		return
+	}
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if ghostBuffer[y][x].lifetime > 0 {
+				ghostBuffer[y][x].lifetime--
+				// Draw the ghost with a dimmer style
+				fg, bg, _ := ghostBuffer[y][x].style.Deconstruct()
+				ghostStyle := tcell.StyleDefault.Foreground(fg.Dim(2)).Background(bg)
+				s.SetContent(x, y, ghostBuffer[y][x].r, nil, ghostStyle)
+
+				if ghostBuffer[y][x].lifetime == 0 {
+					s.SetContent(x, y, ' ', nil, tcell.StyleDefault)
+				}
+			}
+		}
+	}
+}
+
 
 // applyStaticBurst fills the screen with static noise.
 func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
@@ -398,6 +591,22 @@ func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 		shiftLineGlitch(s, width, height, rGen)
 	}
 
+	if opts.VerticalLineEnable && rGen.Float64() < opts.VerticalLineProbability {
+		applyVerticalLineGlitch(s, width, height, rGen)
+	}
+
+	if opts.InvertColorsEnable && rGen.Float64() < opts.InvertColorsProbability {
+		applyInvertColorsGlitch(s, width, height, rGen)
+	}
+
+	if opts.CharScrambleEnable && rGen.Float64() < opts.CharScrambleProbability {
+		applyCharScrambleGlitch(s, width, height, rGen)
+	}
+
+	if opts.TunnelEnable && rGen.Float64() < opts.TunnelProbability {
+		applyTunnelEffect(s, width, height, rGen, opts)
+	}
+
 	if rGen.Intn(10) < 1 {
 		blockDistortionGlitch(s, width, height, rGen)
 	}
@@ -405,6 +614,7 @@ func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 	applyScanlineEffect(s, width, height, rGen, opts)  // Call new scanline effect
 	applyColorCycle(s, rGen, opts)                     // Call new color cycle effect
 	applySmear(s, width, height, rGen, opts)           // Call new smear effect
+	applyGhostingEffect(s, width, height, rGen, opts) // Call new ghosting effect
 	applyScrollingBlocks(s, width, height, rGen, opts) // Call new scrolling blocks effect
 	applyBitRot(s, width, height, rGen, opts)
 	applyMelt(s, width, height, rGen, opts)

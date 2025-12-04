@@ -34,6 +34,17 @@ type GlitchOptions struct {
 	MeltProbability     float64
 	BitRotEnable        bool
 	BitRotProbability   float64
+	VerticalLineEnable bool
+	VerticalLineProbability float64
+	InvertColorsEnable bool
+	InvertColorsProbability float64
+	CharScrambleEnable bool
+	CharScrambleProbability float64
+	GhostingEnable bool
+	GhostingProbability float64
+	TunnelEnable bool
+	TunnelProbability float64
+	TunnelSpeed int
 	SavePreset          string
 	LoadPreset          string
 	// Add more options here later
@@ -73,6 +84,17 @@ func ParseOptions() *GlitchOptions {
 	flag.Float64Var(&opts.MeltProbability, "melt-prob", 0.1, "probability (0.0-1.0) of a character melting")
 	flag.BoolVar(&opts.BitRotEnable, "bitrot", false, "enable bit-rot effect")
 	flag.Float64Var(&opts.BitRotProbability, "bitrot-prob", 0.1, "probability (0.0-1.0) of a character bit-rotting")
+	flag.BoolVar(&opts.VerticalLineEnable, "vert-line", false, "enable vertical line glitch effect")
+	flag.Float64Var(&opts.VerticalLineProbability, "vert-line-prob", 0.1, "probability (0.0-1.0) of a vertical line appearing each frame")
+	flag.BoolVar(&opts.InvertColorsEnable, "invert-colors", false, "enable invert colors glitch effect")
+	flag.Float64Var(&opts.InvertColorsProbability, "invert-colors-prob", 0.1, "probability (0.0-1.0) of a color inversion appearing each frame")
+	flag.BoolVar(&opts.CharScrambleEnable, "char-scramble", false, "enable character scramble glitch effect")
+	flag.Float64Var(&opts.CharScrambleProbability, "char-scramble-prob", 0.1, "probability (0.0-1.0) of a character scramble appearing each frame")
+	flag.BoolVar(&opts.GhostingEnable, "ghosting", false, "enable ghosting trail effect")
+	flag.Float64Var(&opts.GhostingProbability, "ghosting-prob", 0.1, "probability (0.0-1.0) of a character starting to ghost")
+	flag.BoolVar(&opts.TunnelEnable, "tunnel", false, "enable tunnel/zoom effect")
+	flag.Float64Var(&opts.TunnelProbability, "tunnel-prob", 0.1, "probability (0.0-1.0) of a tunnel/zoom effect appearing each frame")
+	flag.IntVar(&opts.TunnelSpeed, "tunnel-speed", 1, "speed of the tunnel/zoom effect")
 	flag.Parse()
 
 	// Clamp intensity
@@ -156,6 +178,48 @@ func ParseOptions() *GlitchOptions {
 	}
 	if opts.BitRotProbability > 1.0 {
 		opts.BitRotProbability = 1.0
+	}
+	// Clamp vertical line probability
+	if opts.VerticalLineProbability < 0.0 {
+		opts.VerticalLineProbability = 0.0
+	}
+	if opts.VerticalLineProbability > 1.0 {
+		opts.VerticalLineProbability = 1.0
+	}
+	// Clamp invert colors probability
+	if opts.InvertColorsProbability < 0.0 {
+		opts.InvertColorsProbability = 0.0
+	}
+	if opts.InvertColorsProbability > 1.0 {
+		opts.InvertColorsProbability = 1.0
+	}
+	// Clamp char scramble probability
+	if opts.CharScrambleProbability < 0.0 {
+		opts.CharScrambleProbability = 0.0
+	}
+	if opts.CharScrambleProbability > 1.0 {
+		opts.CharScrambleProbability = 1.0
+	}
+	// Clamp ghosting probability
+	if opts.GhostingProbability < 0.0 {
+		opts.GhostingProbability = 0.0
+	}
+	if opts.GhostingProbability > 1.0 {
+		opts.GhostingProbability = 1.0
+	}
+	// Clamp tunnel probability
+	if opts.TunnelProbability < 0.0 {
+		opts.TunnelProbability = 0.0
+	}
+	if opts.TunnelProbability > 1.0 {
+		opts.TunnelProbability = 1.0
+	}
+	// Clamp tunnel speed
+	if opts.TunnelSpeed < 1 {
+		opts.TunnelSpeed = 1
+	}
+	if opts.TunnelSpeed > 10 {
+		opts.TunnelSpeed = 10
 	}
 
 	return &opts
