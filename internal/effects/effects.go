@@ -1,8 +1,8 @@
 package effects
 
 import (
-	"math/rand"
 	"glitch-saver/internal/options"
+	"math/rand"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -40,9 +40,9 @@ var cyclingCells = make(map[Point]int)
 
 // SmearCell represents a cell with a trail life.
 type SmearCell struct {
-	r     rune
-	style tcell.Style
-	lifetime  int
+	r        rune
+	style    tcell.Style
+	lifetime int
 }
 
 var smearBuffer [][]SmearCell
@@ -53,7 +53,7 @@ var staticFrames int
 // ScrollingBlock represents a block of the screen that is scrolling.
 type ScrollingBlock struct {
 	srcX, srcY, destX, destY, w, h, dx, dy, life int
-	cells                                       [][]SmearCell
+	cells                                        [][]SmearCell
 }
 
 var scrollingBlocks []*ScrollingBlock
@@ -81,8 +81,8 @@ func shiftLineGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // op
 	}, width)
 
 	for x := 0; x < width; x++ {
-		mainc, _, style, _ := s.GetContent(x, y)
-		line[x].r = mainc
+		mainc, style, _ := s.Get(x, y)
+		line[x].r = rune(mainc[0])
 		line[x].style = style
 	}
 
@@ -119,8 +119,8 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 		}, blockW)
 		for x := 0; x < blockW; x++ {
 			if srcX+x < width && srcY+y < height {
-				mainc, _, style, _ := s.GetContent(srcX+x, srcY+y)
-				block[y][x].r = mainc
+				mainc, style, _ := s.Get(srcX+x, srcY+y)
+				block[y][x].r = rune(mainc[0])
 				block[y][x].style = style
 			}
 		}
@@ -194,19 +194,18 @@ func applyScanlineEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opt
 
 	numScanlineChars := width / 2 // Default density
 	if opts.ScanlineIntensity > 0 {
-		numScanlineChars = rGen.Intn(width/2) + (width/4 * opts.ScanlineIntensity/10) // Scale with intensity
+		numScanlineChars = rGen.Intn(width/2) + (width / 4 * opts.ScanlineIntensity / 10) // Scale with intensity
 	}
 	if numScanlineChars > width {
 		numScanlineChars = width
 	}
 
-
 	for i := 0; i < numScanlineChars; i++ {
 		x := rGen.Intn(width) // Random position within the row
-		
+
 		r := scanlineRunes[rGen.Intn(len(scanlineRunes))]
 		fg := glitchColors[rGen.Intn(len(glitchColors))]
-		
+
 		style := tcell.StyleDefault.Foreground(fg)
 		if opts.UseBG {
 			bg := glitchColors[rGen.Intn(len(glitchColors))]
@@ -224,8 +223,8 @@ func applyColorCycle(s tcell.Screen, rGen *rand.Rand, opts *options.GlitchOption
 	}
 
 	for p, colorIndex := range cyclingCells {
-		mainc, _, style, _ := s.GetContent(p.X, p.Y)
-		if mainc == ' ' {
+		mainc, style, _ := s.Get(p.X, p.Y)
+		if rune(mainc[0]) == ' ' {
 			delete(cyclingCells, p)
 			continue
 		}
@@ -233,15 +232,15 @@ func applyColorCycle(s tcell.Screen, rGen *rand.Rand, opts *options.GlitchOption
 		// Update color index
 		colorIndex = (colorIndex + opts.ColorCycleSpeed) % len(glitchColors)
 		cyclingCells[p] = colorIndex
-		
+
 		newStyle := style.Foreground(glitchColors[colorIndex])
-		
+
 		if opts.UseBG {
 			bg := glitchColors[(colorIndex+len(glitchColors)/2)%len(glitchColors)] // Offset background color
 			newStyle = newStyle.Background(bg)
 		}
 
-		s.SetContent(p.X, p.Y, mainc, nil, newStyle)
+		s.SetContent(p.X, p.Y, rune(mainc[0]), nil, newStyle)
 	}
 }
 
@@ -270,16 +269,16 @@ func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *
 	if opts.StaticChar != "" {
 		staticRunes = []rune(opts.StaticChar)
 	}
-	
+
 	numStaticChars := (width * height) / 4 // Cover a quarter of the screen with static
 	for i := 0; i < numStaticChars; i++ {
 		x := rGen.Intn(width)
 		y := rGen.Intn(height)
-		
+
 		r := staticRunes[rGen.Intn(len(staticRunes))]
 		fg := staticColors[rGen.Intn(len(staticColors))]
 		bg := staticColors[rGen.Intn(len(staticColors))]
-		
+
 		style := tcell.StyleDefault.Foreground(fg).Background(bg)
 		s.SetContent(x, y, r, nil, style)
 	}
@@ -332,8 +331,8 @@ func applyScrollingBlocks(s tcell.Screen, width, height int, rGen *rand.Rand, op
 		for y := 0; y < blockH; y++ {
 			cells[y] = make([]SmearCell, blockW)
 			for x := 0; x < blockW; x++ {
-				mainc, _, style, _ := s.GetContent(srcX+x, srcY+y)
-				cells[y][x] = SmearCell{mainc, style, 1}
+				mainc, style, _ := s.Get(srcX+x, srcY+y)
+				cells[y][x] = SmearCell{rune(mainc[0]), style, 1}
 			}
 		}
 
@@ -403,9 +402,9 @@ func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 		blockDistortionGlitch(s, width, height, rGen)
 	}
 
-	applyScanlineEffect(s, width, height, rGen, opts) // Call new scanline effect
-	applyColorCycle(s, rGen, opts) // Call new color cycle effect
-	applySmear(s, width, height, rGen, opts) // Call new smear effect
+	applyScanlineEffect(s, width, height, rGen, opts)  // Call new scanline effect
+	applyColorCycle(s, rGen, opts)                     // Call new color cycle effect
+	applySmear(s, width, height, rGen, opts)           // Call new smear effect
 	applyScrollingBlocks(s, width, height, rGen, opts) // Call new scrolling blocks effect
 	applyBitRot(s, width, height, rGen, opts)
 	applyMelt(s, width, height, rGen, opts)
@@ -420,7 +419,7 @@ func applyBitRot(s tcell.Screen, width, height int, rGen *rand.Rand, opts *optio
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			if rGen.Float64() < opts.BitRotProbability {
-				_, _, style, _ := s.GetContent(x, y)
+				_, style, _ := s.Get(x, y)
 				r := []rune(cp437Chars)[rGen.Intn(len(cp437Chars))]
 				s.SetContent(x, y, r, nil, style)
 			}
@@ -436,11 +435,11 @@ func applyMelt(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options
 	for y := height - 2; y >= 0; y-- {
 		for x := 0; x < width; x++ {
 			if rGen.Float64() < opts.MeltProbability {
-				c, _, style, _ := s.GetContent(x, y)
-				below, _, _, _ := s.GetContent(x, y+1)
+				c, style, _ := s.Get(x, y)
+				below, _, _ := s.Get(x, y+1)
 
-				if below == ' ' {
-					s.SetContent(x, y+1, c, nil, style)
+				if rune(below[0]) == ' ' {
+					s.SetContent(x, y+1, rune(c[0]), nil, style)
 					s.SetContent(x, y, ' ', nil, tcell.StyleDefault)
 				}
 			}
@@ -472,12 +471,12 @@ func applyJitter(s tcell.Screen, width, height int, rGen *rand.Rand, opts *optio
 				if ny >= height {
 					ny = height - 1
 				}
-				
+
 				// Swap cells
-				c1, _, style1, _ := s.GetContent(x, y)
-				c2, _, style2, _ := s.GetContent(nx, ny)
-				s.SetContent(x, y, c2, nil, style2)
-				s.SetContent(nx, ny, c1, nil, style1)
+				c1, style1, _ := s.Get(x, y)
+				c2, style2, _ := s.Get(nx, ny)
+				s.SetContent(x, y, rune(c2[0]), nil, style2)
+				s.SetContent(nx, ny, rune(c1[0]), nil, style1)
 			}
 		}
 	}

@@ -64,8 +64,8 @@ func RunTUI(opts *options.GlitchOptions) {
 			case *tcell.EventResize:
 				width, height = s.Size() // Update dimensions on resize
 				effects.InitializeEffects(width, height)
-				s.Clear()                // Clear screen on resize to avoid artifacts
-				s.Sync()                 // Sync screen after resize
+				s.Clear() // Clear screen on resize to avoid artifacts
+				s.Sync()  // Sync screen after resize
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
 					return // Exit the application

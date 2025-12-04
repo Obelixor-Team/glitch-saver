@@ -157,6 +157,6 @@ func ParseOptions() *GlitchOptions {
 	if opts.BitRotProbability > 1.0 {
 		opts.BitRotProbability = 1.0
 	}
-	
+
 	return &opts
 }

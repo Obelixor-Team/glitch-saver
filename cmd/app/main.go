@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"glitch-saver/internal/options"
 	"glitch-saver/internal/tui"
@@ -13,7 +13,7 @@ func main() {
 	opts := options.ParseOptions()
 
 	if opts.LoadPreset != "" {
-		data, err := ioutil.ReadFile(opts.LoadPreset)
+		data, err := os.ReadFile(opts.LoadPreset)
 		if err != nil {
 			log.Fatalf("failed to read preset file: %v", err)
 		}
@@ -27,7 +27,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to marshal preset: %v", err)
 		}
-		if err := ioutil.WriteFile(opts.SavePreset, data, 0644); err != nil {
+		if err := os.WriteFile(opts.SavePreset, data, 0644); err != nil {
 			log.Fatalf("failed to write preset file: %v", err)
 		}
 	}
