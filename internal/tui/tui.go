@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"log"
@@ -6,10 +6,13 @@ import (
 	"os"
 	"time"
 
+	"glitch-saver/internal/effects"
+	"glitch-saver/internal/options"
+
 	"github.com/gdamore/tcell/v2"
 )
 
-func RunTUI(opts *GlitchOptions) {
+func RunTUI(opts *options.GlitchOptions) {
 	// Create a local random number generator
 	rGen := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -39,7 +42,7 @@ func RunTUI(opts *GlitchOptions) {
 	// Get initial screen dimensions
 	width, height := s.Size()
 
-	InitializeEffects(width, height)
+	effects.InitializeEffects(width, height)
 
 	// Create a channel for events and a goroutine to listen for them
 	eventChan := make(chan tcell.Event)
@@ -60,7 +63,7 @@ func RunTUI(opts *GlitchOptions) {
 			switch ev := ev.(type) {
 			case *tcell.EventResize:
 				width, height = s.Size() // Update dimensions on resize
-				InitializeEffects(width, height)
+				effects.InitializeEffects(width, height)
 				s.Clear()                // Clear screen on resize to avoid artifacts
 				s.Sync()                 // Sync screen after resize
 			case *tcell.EventKey:
@@ -69,7 +72,7 @@ func RunTUI(opts *GlitchOptions) {
 				}
 			}
 		case <-ticker.C: // Handle animation tick
-			drawGlitch(s, width, height, rGen, opts) // Pass opts struct
+			effects.DrawGlitch(s, width, height, rGen, opts) // Pass opts struct
 			s.Show()
 		}
 	}

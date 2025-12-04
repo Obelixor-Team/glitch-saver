@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+
+	"glitch-saver/internal/options"
+	"glitch-saver/internal/tui"
 )
 
 func main() {
-	opts := ParseOptions()
+	opts := options.ParseOptions()
 
 	if opts.LoadPreset != "" {
 		data, err := ioutil.ReadFile(opts.LoadPreset)
@@ -29,5 +32,5 @@ func main() {
 		}
 	}
 
-	RunTUI(opts)
+	tui.RunTUI(opts)
 }

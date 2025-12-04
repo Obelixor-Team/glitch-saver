@@ -1,7 +1,8 @@
-package main
+package effects
 
 import (
 	"math/rand"
+	"glitch-saver/internal/options"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -137,7 +138,7 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // applyCharCorruption draws random characters with glitch effects to the screen.
-func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, charSet []rune, fgColors []tcell.Color, opts *GlitchOptions, bgColors []tcell.Color) {
+func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, charSet []rune, fgColors []tcell.Color, opts *options.GlitchOptions, bgColors []tcell.Color) {
 	numGlitch := rGen.Intn(100*opts.Intensity) + (50 * opts.Intensity)
 	for i := 0; i < numGlitch; i++ {
 		x := rGen.Intn(width)
@@ -172,7 +173,7 @@ func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, cha
 }
 
 // applyScanlineEffect draws a horizontal scanline with glitch effects.
-func applyScanlineEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+func applyScanlineEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
 	if height == 0 || !opts.ScanlineEnable {
 		return
 	}
@@ -217,7 +218,7 @@ func applyScanlineEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opt
 }
 
 // applyColorCycle updates the colors of cycling cells.
-func applyColorCycle(s tcell.Screen, rGen *rand.Rand, opts *GlitchOptions) {
+func applyColorCycle(s tcell.Screen, rGen *rand.Rand, opts *options.GlitchOptions) {
 	if !opts.ColorCycleEnable {
 		return
 	}
@@ -245,7 +246,7 @@ func applyColorCycle(s tcell.Screen, rGen *rand.Rand, opts *GlitchOptions) {
 }
 
 // applySmear draws and fades smeared characters.
-func applySmear(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+func applySmear(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
 	if !opts.SmearEnable {
 		return
 	}
@@ -264,7 +265,7 @@ func applySmear(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 }
 
 // applyStaticBurst fills the screen with static noise.
-func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
 	staticRunes := []rune(staticChars)
 	if opts.StaticChar != "" {
 		staticRunes = []rune(opts.StaticChar)
@@ -285,7 +286,7 @@ func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *
 }
 
 // applyScrollingBlocks scrolls blocks of the screen.
-func applyScrollingBlocks(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+func applyScrollingBlocks(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
 	if !opts.ScrollEnable {
 		return
 	}
@@ -371,8 +372,8 @@ func applyScrollingBlocks(s tcell.Screen, width, height int, rGen *rand.Rand, op
 	}
 }
 
-// drawGlitch orchestrates various glitch effects on the screen.
-func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) { // opts replaces many args
+// DrawGlitch orchestrates various glitch effects on the screen.
+func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) { // opts replaces many args
 	if staticFrames > 0 {
 		applyStaticBurst(s, width, height, rGen, opts)
 		staticFrames--
@@ -411,7 +412,7 @@ func drawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitch
 	applyJitter(s, width, height, rGen, opts)
 }
 
-func applyBitRot(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+func applyBitRot(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
 	if !opts.BitRotEnable {
 		return
 	}
@@ -427,7 +428,7 @@ func applyBitRot(s tcell.Screen, width, height int, rGen *rand.Rand, opts *Glitc
 	}
 }
 
-func applyMelt(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+func applyMelt(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
 	if !opts.MeltEnable {
 		return
 	}
@@ -447,7 +448,7 @@ func applyMelt(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchO
 	}
 }
 
-func applyJitter(s tcell.Screen, width, height int, rGen *rand.Rand, opts *GlitchOptions) {
+func applyJitter(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
 	if !opts.JitterEnable {
 		return
 	}
