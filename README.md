@@ -15,7 +15,7 @@ Here's a glimpse of the glitch effects in action:
 To build the application, you need to have Go installed.
 
 ```bash
-go build -o glitch-saver main.go
+go build -o glitch-saver ./cmd/app
 ```
 
 ## Running
