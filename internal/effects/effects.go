@@ -141,7 +141,7 @@ func applyInvertColorsGlitch(s tcell.Screen, width, height int, rGen *rand.Rand)
 	for y := blockY; y < blockY+blockH && y < height; y++ {
 		for x := blockX; x < blockX+blockW && x < width; x++ {
 			mainc, style, _ := s.Get(x, y)
-			fg, bg, _ := style.Deconstruct()
+			fg, bg, _ := style.Decompose()
 			newStyle := style.Foreground(bg).Background(fg)
 			s.SetContent(x, y, rune(mainc[0]), nil, newStyle)
 		}
@@ -253,10 +253,6 @@ func applyTunnelEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opts 
 		}
 	}
 }
-
-
-
-
 
 // blockDistortionGlitch copies a random block of the screen to another random location
 func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) { // opts added
@@ -443,8 +439,8 @@ func applyGhostingEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opt
 			if ghostBuffer[y][x].lifetime > 0 {
 				ghostBuffer[y][x].lifetime--
 				// Draw the ghost with a dimmer style
-				fg, bg, _ := ghostBuffer[y][x].style.Deconstruct()
-				ghostStyle := tcell.StyleDefault.Foreground(fg.Dim(2)).Background(bg)
+				fg, bg, _ := ghostBuffer[y][x].style.Decompose()
+				ghostStyle := tcell.StyleDefault.Foreground(fg).Background(bg).Dim(true)
 				s.SetContent(x, y, ghostBuffer[y][x].r, nil, ghostStyle)
 
 				if ghostBuffer[y][x].lifetime == 0 {
@@ -454,7 +450,6 @@ func applyGhostingEffect(s tcell.Screen, width, height int, rGen *rand.Rand, opt
 		}
 	}
 }
-
 
 // applyStaticBurst fills the screen with static noise.
 func applyStaticBurst(s tcell.Screen, width, height int, rGen *rand.Rand, opts *options.GlitchOptions) {
@@ -614,7 +609,7 @@ func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 	applyScanlineEffect(s, width, height, rGen, opts)  // Call new scanline effect
 	applyColorCycle(s, rGen, opts)                     // Call new color cycle effect
 	applySmear(s, width, height, rGen, opts)           // Call new smear effect
-	applyGhostingEffect(s, width, height, rGen, opts) // Call new ghosting effect
+	applyGhostingEffect(s, width, height, rGen, opts)  // Call new ghosting effect
 	applyScrollingBlocks(s, width, height, rGen, opts) // Call new scrolling blocks effect
 	applyBitRot(s, width, height, rGen, opts)
 	applyMelt(s, width, height, rGen, opts)

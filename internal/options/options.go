@@ -6,47 +6,47 @@ import (
 
 // GlitchOptions holds all configurable parameters for the glitch effects.
 type GlitchOptions struct {
-	FPS                 int
-	Intensity           int
-	UseCP437            bool
-	UseBlocks           bool
-	UseBG               bool
-	ScanlineEnable      bool
-	ScanlineProbability float64
-	ScanlineIntensity   int
-	ScanlineChar        string
-	ColorCycleEnable    bool
-	ColorCycleSpeed     int
-	SmearEnable         bool
-	SmearProbability    float64
-	SmearLength         int
-	StaticEnable        bool
-	StaticProbability   float64
-	StaticDuration      int
-	StaticChar          string
-	ScrollEnable        bool
-	ScrollProbability   float64
-	ScrollSpeed         int
-	ScrollDirection     string
-	JitterEnable        bool
-	JitterProbability   float64
-	MeltEnable          bool
-	MeltProbability     float64
-	BitRotEnable        bool
-	BitRotProbability   float64
-	VerticalLineEnable bool
+	FPS                     int
+	Intensity               int
+	UseCP437                bool
+	UseBlocks               bool
+	UseBG                   bool
+	ScanlineEnable          bool
+	ScanlineProbability     float64
+	ScanlineIntensity       int
+	ScanlineChar            string
+	ColorCycleEnable        bool
+	ColorCycleSpeed         int
+	SmearEnable             bool
+	SmearProbability        float64
+	SmearLength             int
+	StaticEnable            bool
+	StaticProbability       float64
+	StaticDuration          int
+	StaticChar              string
+	ScrollEnable            bool
+	ScrollProbability       float64
+	ScrollSpeed             int
+	ScrollDirection         string
+	JitterEnable            bool
+	JitterProbability       float64
+	MeltEnable              bool
+	MeltProbability         float64
+	BitRotEnable            bool
+	BitRotProbability       float64
+	VerticalLineEnable      bool
 	VerticalLineProbability float64
-	InvertColorsEnable bool
+	InvertColorsEnable      bool
 	InvertColorsProbability float64
-	CharScrambleEnable bool
+	CharScrambleEnable      bool
 	CharScrambleProbability float64
-	GhostingEnable bool
-	GhostingProbability float64
-	TunnelEnable bool
-	TunnelProbability float64
-	TunnelSpeed int
-	SavePreset          string
-	LoadPreset          string
+	GhostingEnable          bool
+	GhostingProbability     float64
+	TunnelEnable            bool
+	TunnelProbability       float64
+	TunnelSpeed             int
+	SavePreset              string
+	LoadPreset              string
 	// Add more options here later
 }
 
