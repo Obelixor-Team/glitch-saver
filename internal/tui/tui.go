@@ -3,7 +3,6 @@ package tui
 import (
 	"log"
 	"math/rand"
-	"os"
 	"time"
 
 	"glitch-saver/internal/effects"
@@ -12,18 +11,24 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-func RunTUI(opts *options.GlitchOptions) {
+func RunTUI(opts *options.GlitchOptions) (tcell.Screen, error) {
+	log.Println("Starting RunTUI")
+
 	// Create a local random number generator
 	rGen := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// Initialize tcell screen
 	s, err := tcell.NewScreen()
 	if err != nil {
-		log.Fatalf("%+v", err)
+		log.Printf("ERROR: tcell.NewScreen() failed: %+v", err)
+		return nil, err // Return to allow deferred quit() to run
 	}
 	if err = s.Init(); err != nil {
-		log.Fatalf("%+v", err)
+		log.Printf("ERROR: s.Init() failed: %+v", err)
+		s.Fini() // Finalize screen if Init fails
+		return nil, err
 	}
+	log.Println("Screen initialized successfully")
 
 	// Set default style and clear screen
 	s.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite))
@@ -33,11 +38,11 @@ func RunTUI(opts *options.GlitchOptions) {
 	s.HideCursor()
 
 	// Event loop for handling input and drawing
-	quit := func() {
-		s.Fini()
-		os.Exit(0)
-	}
-	defer quit() // Ensure screen is finalized on exit
+	// quit := func() {
+	// 	s.Fini()
+	// 	os.Exit(0)
+	// }
+	// defer quit() // Ensure screen is finalized on exit
 
 	// Get initial screen dimensions
 	width, height := s.Size()
@@ -68,7 +73,7 @@ func RunTUI(opts *options.GlitchOptions) {
 				s.Sync()  // Sync screen after resize
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
-					return // Exit the application
+					return s, nil // Exit the application, returning the screen
 				}
 			}
 		case <-ticker.C: // Handle animation tick
@@ -76,4 +81,6 @@ func RunTUI(opts *options.GlitchOptions) {
 			s.Show()
 		}
 	}
+	// If the loop exits for some reason, return the screen.
+	return s, nil
 }

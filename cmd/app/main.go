@@ -32,5 +32,13 @@ func main() {
 		}
 	}
 
-	tui.RunTUI(opts)
+	log.Println("Calling RunTUI")
+	s, err := tui.RunTUI(opts)
+	if err != nil {
+		log.Fatalf("TUI application failed: %v", err)
+	}
+	log.Println("RunTUI returned successfully, finalizing screen.")
+	// Ensure the screen is finalized
+	s.Fini()
+	log.Println("Application exited normally.")
 }
