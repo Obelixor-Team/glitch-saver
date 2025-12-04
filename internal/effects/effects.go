@@ -580,9 +580,11 @@ func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 		charSet = []rune(glitchChars)
 	}
 
-	applyCharCorruption(s, width, height, rGen, charSet, glitchColors, opts, glitchColors)
+	if opts.CharCorruptionEnable {
+		applyCharCorruption(s, width, height, rGen, charSet, glitchColors, opts, glitchColors)
+	}
 
-	if rGen.Intn(10) < 2 {
+	if opts.ShiftLineEnable && rGen.Intn(10) < 2 {
 		shiftLineGlitch(s, width, height, rGen)
 	}
 
@@ -602,7 +604,7 @@ func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 		applyTunnelEffect(s, width, height, rGen, opts)
 	}
 
-	if rGen.Intn(10) < 1 {
+	if opts.BlockDistortionEnable && rGen.Intn(10) < 1 {
 		blockDistortionGlitch(s, width, height, rGen)
 	}
 

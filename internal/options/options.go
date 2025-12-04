@@ -11,6 +11,9 @@ type GlitchOptions struct {
 	UseCP437                bool
 	UseBlocks               bool
 	UseBG                   bool
+	ShiftLineEnable         bool
+	BlockDistortionEnable   bool
+	CharCorruptionEnable    bool
 	ScanlineEnable          bool
 	ScanlineProbability     float64
 	ScanlineIntensity       int
@@ -62,6 +65,9 @@ func ParseOptions() *GlitchOptions {
 	flag.BoolVar(&opts.UseCP437, "cp437", false, "use Code Page 437 characters for a retro effect")
 	flag.BoolVar(&opts.UseBlocks, "blocks", false, "use only block characters for a heavy glitch effect")
 	flag.BoolVar(&opts.UseBG, "bg", false, "enable random background coloring")
+	flag.BoolVar(&opts.ShiftLineEnable, "shift-line", false, "enable horizontal line shift glitch effect")
+	flag.BoolVar(&opts.BlockDistortionEnable, "block-distort", false, "enable block distortion glitch effect")
+	flag.BoolVar(&opts.CharCorruptionEnable, "char-corrupt", false, "enable character corruption glitch effect")
 	flag.BoolVar(&opts.ScanlineEnable, "scanline", false, "enable scanline glitch effect")
 	flag.Float64Var(&opts.ScanlineProbability, "scanline-prob", 0.1, "probability (0.0-1.0) of a scanline appearing each frame")
 	flag.IntVar(&opts.ScanlineIntensity, "scanline-intensity", 5, "intensity (1-10) of scanlines")
@@ -103,6 +109,9 @@ func ParseOptions() *GlitchOptions {
 		opts.UseCP437 = true
 		opts.UseBlocks = true
 		opts.UseBG = true
+		opts.ShiftLineEnable = true
+		opts.BlockDistortionEnable = true
+		opts.CharCorruptionEnable = true
 		opts.ScanlineEnable = true
 		opts.ScanlineProbability = 1.0
 		opts.ScanlineIntensity = 10
