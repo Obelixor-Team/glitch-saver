@@ -92,6 +92,19 @@ each frame. (Default: 0.05)
 - `-theme`: Select a predefined color theme. Available themes: `default`,
 `matrix`, `vaporwave`, `grayscale`. (Default: "default")
 
+#### Theme Examples
+
+```bash
+# Use the matrix theme for green hacker-style colors
+./glitch-saver -theme matrix
+
+# Use the vaporwave theme for pastel colors
+./glitch-saver -theme vaporwave
+
+# Use the grayscale theme for monochrome effects
+./glitch-saver -theme grayscale
+```
+
 ### Examples
 
 ```bash
