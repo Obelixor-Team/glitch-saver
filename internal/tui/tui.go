@@ -66,6 +66,7 @@ func RunTUI(opts *options.GlitchOptions) (tcell.Screen, error) {
 				s.Sync()  // Sync screen after resize
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
+					s.Fini()      // Finalize the screen before returning
 					return s, nil // Exit the application, returning the screen
 				}
 			}
@@ -78,6 +79,4 @@ func RunTUI(opts *options.GlitchOptions) (tcell.Screen, error) {
 			s.Show()
 		}
 	}
-	// If the loop exits for some reason, return the screen.
-	return s, nil
 }
