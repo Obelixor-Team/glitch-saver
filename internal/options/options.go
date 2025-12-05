@@ -49,6 +49,7 @@ type GlitchOptions struct {
 	TunnelProbability       float64
 	TunnelSpeed             int
 	AllEffectsEnable        bool
+	Theme                   string
 	SavePreset              string
 	LoadPreset              string
 	// Add more options here later
@@ -60,6 +61,7 @@ func ParseOptions() *GlitchOptions {
 	// Define command-line flags and populate opts
 	flag.StringVar(&opts.SavePreset, "save-preset", "", "save the current options to a file")
 	flag.StringVar(&opts.LoadPreset, "load-preset", "", "load options from a file")
+	flag.StringVar(&opts.Theme, "theme", "default", "select a predefined color theme. Available themes: default, matrix, vaporwave, grayscale")
 	flag.IntVar(&opts.FPS, "fps", 30, "frames per second for the animation")
 	flag.IntVar(&opts.Intensity, "intensity", 5, "glitch intensity (1-10)")
 	flag.BoolVar(&opts.UseCP437, "cp437", false, "use Code Page 437 characters for a retro effect")
@@ -144,6 +146,17 @@ func ParseOptions() *GlitchOptions {
 		opts.TunnelProbability = 0.5 // High probability, but not 1.0
 		opts.TunnelSpeed = 5
 		opts.Intensity = 10
+	}
+
+	// Validate theme
+	validThemes := map[string]bool{
+		"default":    true,
+		"matrix":     true,
+		"vaporwave":  true,
+		"grayscale":  true,
+	}
+	if !validThemes[opts.Theme] {
+		opts.Theme = "default" // fallback to default if invalid theme is provided
 	}
 
 	// Clamp intensity

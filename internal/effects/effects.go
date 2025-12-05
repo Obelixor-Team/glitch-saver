@@ -24,6 +24,65 @@ var glitchColors = []tcell.Color{
 	tcell.NewRGBColor(255, 255, 255), // White
 }
 
+// Theme-specific color palettes
+var defaultColors = []tcell.Color{
+	tcell.NewRGBColor(0, 0, 0),       // Black
+	tcell.NewRGBColor(255, 0, 0),     // Red
+	tcell.NewRGBColor(0, 255, 0),     // Green
+	tcell.NewRGBColor(255, 255, 0),   // Yellow
+	tcell.NewRGBColor(0, 0, 255),     // Blue
+	tcell.NewRGBColor(255, 0, 255),   // Magenta
+	tcell.NewRGBColor(0, 255, 255),   // Cyan
+	tcell.NewRGBColor(255, 255, 255), // White
+}
+
+var matrixColors = []tcell.Color{
+	tcell.NewRGBColor(0, 0, 0),       // Black
+	tcell.NewRGBColor(0, 100, 0),     // Dark Green
+	tcell.NewRGBColor(0, 150, 0),     // Medium Green
+	tcell.NewRGBColor(0, 200, 0),     // Bright Green
+	tcell.NewRGBColor(0, 255, 0),     // Full Green
+	tcell.NewRGBColor(0, 255, 100),   // Light Green
+	tcell.NewRGBColor(50, 255, 50),   // Lighter Green
+	tcell.NewRGBColor(100, 255, 100), // Very Light Green
+}
+
+var vaporwaveColors = []tcell.Color{
+	tcell.NewRGBColor(0, 0, 0),       // Black
+	tcell.NewRGBColor(255, 0, 255),   // Magenta
+	tcell.NewRGBColor(0, 255, 255),   // Cyan
+	tcell.NewRGBColor(255, 105, 180), // Hot Pink
+	tcell.NewRGBColor(135, 206, 250), // Light Sky Blue
+	tcell.NewRGBColor(221, 160, 221), // Plum
+	tcell.NewRGBColor(255, 105, 180), // Hot Pink
+	tcell.NewRGBColor(255, 255, 255), // White
+}
+
+var grayscaleColors = []tcell.Color{
+	tcell.NewRGBColor(0, 0, 0),       // Black
+	tcell.NewRGBColor(40, 40, 40),    // Very Dark Gray
+	tcell.NewRGBColor(80, 80, 80),    // Dark Gray
+	tcell.NewRGBColor(120, 120, 120), // Medium Gray
+	tcell.NewRGBColor(160, 160, 160), // Light Gray
+	tcell.NewRGBColor(200, 200, 200), // Lighter Gray
+	tcell.NewRGBColor(240, 240, 240), // Very Light Gray
+	tcell.NewRGBColor(255, 255, 255), // White
+}
+
+// Function to get the appropriate color palette based on the selected theme
+func getColorsForTheme(theme string) []tcell.Color {
+	switch theme {
+	case "matrix":
+		return matrixColors
+	case "vaporwave":
+		return vaporwaveColors
+	case "grayscale":
+		return grayscaleColors
+	default: // default theme
+		return defaultColors
+	}
+}
+
 var staticColors = []tcell.Color{
 	tcell.NewRGBColor(0, 0, 0),       // Black
 	tcell.NewRGBColor(128, 128, 128), // Grey
@@ -353,7 +412,8 @@ func blockDistortionGlitch(s tcell.Screen, width, height int, rGen *rand.Rand) {
 }
 
 // applyCharCorruption draws random characters with glitch effects to the screen.
-func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, charSet []rune, fgColors []tcell.Color, opts *options.GlitchOptions, bgColors []tcell.Color) {
+func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, charSet []rune, theme string, opts *options.GlitchOptions, bgColors []tcell.Color) {
+	fgColors := getColorsForTheme(theme)
 	numGlitch := rGen.Intn(100*opts.Intensity) + (50 * opts.Intensity)
 	for i := 0; i < numGlitch; i++ {
 		x := rGen.Intn(width)
@@ -374,7 +434,7 @@ func applyCharCorruption(s tcell.Screen, width, height int, rGen *rand.Rand, cha
 		// Add to color cycling
 		if opts.ColorCycleEnable {
 			if rGen.Float64() < 0.1 { // 10% chance to add to cycling
-				cyclingCells[Point{x, y}] = rGen.Intn(len(glitchColors))
+				cyclingCells[Point{x, y}] = rGen.Intn(len(fgColors))
 			}
 		}
 
@@ -444,6 +504,9 @@ func applyColorCycle(s tcell.Screen, width, height int, rGen *rand.Rand, opts *o
 		return
 	}
 
+	// Get the theme-specific colors
+	colors := getColorsForTheme(opts.Theme)
+
 	// Clean up out-of-bounds positions first
 	for p := range cyclingCells {
 		if p.X < 0 || p.X >= width || p.Y < 0 || p.Y >= height {
@@ -465,13 +528,13 @@ func applyColorCycle(s tcell.Screen, width, height int, rGen *rand.Rand, opts *o
 		}
 
 		// Update color index
-		colorIndex = (colorIndex + opts.ColorCycleSpeed) % len(glitchColors)
+		colorIndex = (colorIndex + opts.ColorCycleSpeed) % len(colors)
 		cyclingCells[p] = colorIndex
 
-		newStyle := style.Foreground(glitchColors[colorIndex])
+		newStyle := style.Foreground(colors[colorIndex])
 
 		if opts.UseBG {
-			bg := glitchColors[(colorIndex+len(glitchColors)/2)%len(glitchColors)] // Offset background color
+			bg := colors[(colorIndex+len(colors)/2)%len(colors)] // Offset background color
 			newStyle = newStyle.Background(bg)
 		}
 
@@ -675,7 +738,7 @@ func DrawGlitch(s tcell.Screen, width, height int, rGen *rand.Rand, opts *option
 	}
 
 	if opts.CharCorruptionEnable {
-		applyCharCorruption(s, width, height, rGen, charSet, glitchColors, opts, glitchColors)
+		applyCharCorruption(s, width, height, rGen, charSet, opts.Theme, opts, glitchColors)
 	}
 
 	if opts.ShiftLineEnable && rGen.Intn(10) < 2 {
