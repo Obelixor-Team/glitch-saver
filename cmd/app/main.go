@@ -39,6 +39,8 @@ func main() {
 	}
 	log.Println("RunTUI returned successfully, finalizing screen.")
 	// Ensure the screen is finalized
-	s.Fini()
+	if s != nil {
+		s.Fini()
+	}
 	log.Println("Application exited normally.")
 }

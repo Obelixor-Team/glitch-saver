@@ -67,7 +67,7 @@ func ParseOptions() *GlitchOptions {
 	flag.BoolVar(&opts.UseBG, "bg", false, "enable random background coloring")
 	flag.BoolVar(&opts.ShiftLineEnable, "shift-line", false, "enable horizontal line shift glitch effect")
 	flag.BoolVar(&opts.BlockDistortionEnable, "block-distort", false, "enable block distortion glitch effect")
-	flag.BoolVar(&opts.CharCorruptionEnable, "char-corrupt", false, "enable character corruption glitch effect")
+	flag.BoolVar(&opts.CharCorruptionEnable, "char-corrupt", true, "enable character corruption glitch effect")
 	flag.BoolVar(&opts.ScanlineEnable, "scanline", false, "enable scanline glitch effect")
 	flag.Float64Var(&opts.ScanlineProbability, "scanline-prob", 0.1, "probability (0.0-1.0) of a scanline appearing each frame")
 	flag.IntVar(&opts.ScanlineIntensity, "scanline-intensity", 5, "intensity (1-10) of scanlines")

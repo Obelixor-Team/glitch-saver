@@ -21,9 +21,10 @@ func RunTUI(opts *options.GlitchOptions) (tcell.Screen, error) {
 		return nil, err
 	}
 	if err = s.Init(); err != nil {
-		s.Fini() // Finalize screen if Init fails
 		return nil, err
 	}
+	// We'll call s.Fini() in main.go after TUI returns,
+	// so we don't need a defer here that would call it prematurely
 
 	// Set default style and clear screen
 	s.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite))
@@ -42,15 +43,23 @@ func RunTUI(opts *options.GlitchOptions) (tcell.Screen, error) {
 
 	// Create a channel for events and a goroutine to listen for them
 	eventChan := make(chan tcell.Event)
+	done := make(chan bool, 1) // Channel to signal when to stop the polling goroutine
 	go func() {
 		for {
-			eventChan <- s.PollEvent()
+			select {
+			case eventChan <- s.PollEvent():
+			case <-done:
+				return // Exit the goroutine when done is signaled
+			}
 		}
 	}()
 
 	// Create a ticker for animation updates based on fps flag
 	ticker := time.NewTicker(time.Second / time.Duration(opts.FPS))
-	defer ticker.Stop()
+	defer func() {
+		ticker.Stop()
+		done <- true // Signal the goroutine to stop
+	}()
 
 	// Main event loop
 	for {
@@ -66,7 +75,6 @@ func RunTUI(opts *options.GlitchOptions) (tcell.Screen, error) {
 				s.Sync()  // Sync screen after resize
 			case *tcell.EventKey:
 				if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' {
-					s.Fini()      // Finalize the screen before returning
 					return s, nil // Exit the application, returning the screen
 				}
 			}
